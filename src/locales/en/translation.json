@@ -1,0 +1,142 @@
+{
+  "common": {
+    "app_title": "Mandala Onsil",
+    "app_subtitle": "A Gentle Space for Growing Your Heart",
+    "logo_text": "MANDALA ONSIL",
+    "confirm": "Confirm",
+    "cancel": "Cancel",
+    "save": "Save",
+    "close": "Close",
+    "next": "Next",
+    "back": "Back",
+    "notice": "Notice",
+    "error": "Error",
+    "locked": "Locked",
+    "to_greenhouse": "To Onsil",
+    "my_greenhouse": "My Onsil",
+    "empty_greenhouse": "Clear Onsil",
+    "all": "All",
+    "garden1": "Garden 1",
+    "garden2": "Garden 2",
+    "garden3": "Garden 3",
+    "bloomed_count": "Flowers in Bloom: {{count}}",
+    "color_count": "Feeling Colors: {{count}}",
+    "waiting_for_seed": "Seed Waiting"
+  },
+  "greenhouse": {
+    "title": "Mandala Onsil",
+    "subtitle": "A Gentle Space for Growing Your Heart",
+    "flower_count_status": "Garden {{season}} ({{completed}}/9 in Bloom)",
+    "color_today": "Color Your Feelings Today",
+    "flower_fully_bloomed": "A flower within you has come into full bloom.",
+    "butterfly_sanctuary": "A Garden Visited by Butterflies",
+    "bee_sanctuary": "A Garden Visited by Bees",
+    "bird_sanctuary": "A Garden Visited by Bluebirds",
+    "current_pot_level": "Lv.{{level}} {{stage}}",
+    "status_growing": "Growing",
+    "status_completed": "Bloomed",
+    "empty_pot_letter_title": "A Letter to Your Heart",
+    "empty_pot_letter_desc": "There are no flowers growing in your Onsil yet. Start by coloring today's feelings and plant the first seed of your journey.",
+    "comfort_talk": "Words of Comfort"
+  },
+  "color_select": {
+    "step_indicator": "STEP 01. Choose Your Colors",
+    "step_title": "Which three colors speak to you today?",
+    "selected_colors": "Selected Colors",
+    "select_all_three": "Please select all three colors.",
+    "next_coloring": "Next: Color the Mandala",
+    "locked_color_title": "Hidden\nFeeling Color",
+    "locked_color_desc": "Two blooming flowers\nwill awaken\nthis color.",
+    "extracted": "Discovered",
+    "extract_emotion": "Discover Feelings",
+    "enter_drawing": "Enter Mandala Drawing",
+    "selection_count": "Select Colors ({{count}}/3)"
+  },
+  "mandala_coloring": {
+    "step_indicator": "STEP 02. Color Your Mandala",
+    "guide": "Choose your colors and touch the mandala to fill it with your feelings.",
+    "reset_selection": "Reset Selection",
+    "reset_canvas": "Reset",
+    "progress": "Coloring Progress",
+    "finish_flower": "Complete Reflection",
+    "color_more": "Continue coloring (50% or more required)"
+  },
+  "diary": {
+    "step_indicator": "STEP 03. Reflection Card",
+    "placeholder": "Write down the feelings and thoughts that blossomed in your heart today...",
+    "save_button": "Save Reflection & Bloom Flower",
+    "write_diary": "Write Reflection",
+    "edit_diary": "Edit Reflection",
+    "input_required": "Please write your reflection.",
+    "modal_title": "Reflection Journal",
+    "submit": "Save",
+    "written_date": "Date: {{date}}",
+    "empty_diary": "No reflection recorded for this step.",
+    "empty_diary_desc": "Write reflections from question cards as your flower grows."
+  },
+  "archive": {
+    "title": "My Onsil",
+    "subtitle": "The flowers of the heart you've nurtured",
+    "empty_title": "No memories have blossomed here yet.",
+    "empty_desc": "Nurture your first flower by coloring a mandala.",
+    "view_diary": "View Reflection",
+    "reset_modal_title": "Clear Your Onsil?",
+    "reset_modal_desc": "All flowers and records you have nurtured will be deleted.\nDeleted memories cannot be restored.",
+    "reset_modal_confirm": "Clear",
+    "reset_modal_cancel": "Cancel"
+  },
+  "sanctuary": {
+    "title": "Mandala Onsil",
+    "subtitle": "A Gentle Space for Growing Your Heart",
+    "season_complete_message": "✦ A new season arrives \nwith a deeper journey of the heart. ✦"
+  },
+  "milestone": {
+    "butterfly_title": "The First Butterfly Has Arrived.",
+    "butterfly_desc": "The flowers you nurtured\nhave welcomed the first life\ninto your Onsil.",
+    "butterfly_btn": "🦋 Meet the Butterfly",
+    "second_garden_title": "A Second Garden Has Opened.",
+    "second_garden_desc": "Begin nurturing\nyour second garden.",
+    "start_btn": "Start",
+    "bee_title": "A Bee Has Arrived.",
+    "bee_desc": "The flowers you nurtured\nhave welcomed a second life\ninto your Onsil.",
+    "bee_btn": "🐝 Meet the Bee",
+    "third_garden_title": "A Third Garden Has Opened.",
+    "third_garden_desc": "Begin nurturing\nyour third garden.",
+    "bird_title": "A Bluebird Has Arrived.",
+    "bird_desc": "The flowers you nurtured\nhave welcomed a third life\ninto your Onsil.",
+    "bird_btn": "🐦 Meet the Bluebird",
+    "season1_complete_title": "The First Season Has Ended.",
+    "season1_complete_desc": "The twenty-seven flowers you nurtured have brought your first Onsil to life.\n\nSmall feelings gathered together and became a place where life can flourish.",
+    "season1_complete_btn": "Enter Your Completed Onsil"
+  },
+  "toast": {
+    "small_change": "Small changes are taking root in your Onsil.",
+    "flower_scent_new_life": "As the fragrance grows, new life finds its way to your Onsil.",
+    "butterfly_coming": "The fragrance is filling your Onsil.\nThe day a butterfly arrives is drawing near.",
+    "bee_coming": "The fragrance is filling your Onsil.\nThe day a bee arrives is drawing near.",
+    "bird_coming": "The fragrance is filling your Onsil.\nThe day a bluebird arrives is drawing near."
+  },
+  "export": {
+    "card_title": "Export Reflection Card",
+    "card_downloaded": "Your Reflection Card for [{{name}}] has been downloaded successfully!",
+    "card_area_not_found": "Card area not found.",
+    "share_not_supported": "Sharing is not supported on this device.",
+    "design_area_not_found": "Mandala design area not found.",
+    "design_downloaded": "Mandala design downloaded successfully!",
+    "share_flower": "Share Today's Flower",
+    "onsil_story": "Onsil Stories"
+  },
+  "settings": {
+    "title": "Settings",
+    "community": "Official Community",
+    "privacy_policy": "Privacy Policy"
+  },
+  "growth_stages": {
+    "stage_0": "Seed",
+    "stage_1": "Sprout",
+    "stage_2": "Bud",
+    "stage_3": "Almost Blooming",
+    "stage_4": "Near Full Bloom",
+    "stage_5": "Full Bloom"
+  }
+}

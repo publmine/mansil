@@ -1,0 +1,132 @@
+{
+  "adjectives": {
+    "red": [
+      "Filled with Steady Courage",
+      "Brimming with Vital Energy",
+      "Radiating Inner Strength",
+      "Fearlessly Adventurous",
+      "With a Heart Beating Strong",
+      "Holding the Warmth of Sunset",
+      "Blooming with Determination",
+      "Carrying Gentle Warmth",
+      "Glowing Like a Quiet Ember",
+      "Longing for New Beginnings",
+      "Breathing the Spirit of Life",
+      "Shining Through the Depths"
+    ],
+    "green": [
+      "Wrapped in Morning Mist",
+      "Breathing Deeply in Stillness",
+      "Singing of Fresh Peace",
+      "Steady Through the Wind",
+      "Gentle as Moss",
+      "Holding the Memory of Forests",
+      "Touched by Rainfall",
+      "Growing Beneath Sunlight",
+      "Filled with Quiet Stability",
+      "Flowing with Nature's Rhythm",
+      "Softly Embracing Wounds",
+      "Carrying the Cycle of Life"
+    ],
+    "purple": [
+      "Bathed in Thoughtful Moonlight",
+      "Touched by Deep Reflection",
+      "Holding Sacred Stillness",
+      "Settled with Wisdom",
+      "Like a Dreamlit Sky",
+      "Illuminating the Soul",
+      "Blooming Hidden Feelings",
+      "Carrying Cosmic Silence",
+      "Tinted with Starlight",
+      "Watching Time with Grace",
+      "Guided by Intuition",
+      "Warm Beneath the Moon"
+    ],
+    "blue": [
+      "Carrying the Breath of a Clear Lake",
+      "Gently Comforting Solitude",
+      "Like Freedom Beyond the Horizon",
+      "Flowing with Ocean Waves",
+      "Touched by Dawnlight",
+      "Calm as the Deep Sea",
+      "Riding the Wind of Hope",
+      "Filled with Quiet Comfort",
+      "Holding a Clear Heart",
+      "Shining Beneath the Night Sky"
+    ],
+    "yellow": [
+      "Filled with Sunshine Smiles",
+      "Blooming with Warm Hope",
+      "Like the Light of Morning",
+      "Sharing Gentle Joy",
+      "Radiating Golden Energy",
+      "Holding Seeds of Happiness",
+      "Sparkling Like Golden Dreams",
+      "Reflecting Warm Memories",
+      "Touched by Quiet Delight",
+      "Flowing with Bright Energy"
+    ]
+  },
+  "nouns": {
+    "red": [
+      "Courage Bloom",
+      "First Step Flower",
+      "Ember Blossom",
+      "Challenge Flower",
+      "Passion Bloom",
+      "Heart Blossom",
+      "New Start Flower",
+      "Crimson Sprout",
+      "Warmth Flower",
+      "Willpower Bloom"
+    ],
+    "green": [
+      "Rest Bloom",
+      "Healing Flower",
+      "Fresh Sprout",
+      "Breath Blossom",
+      "Peace Flower",
+      "Harmony Blossom",
+      "Sanctuary Flower",
+      "Forest Bloom",
+      "Quiet Blossom",
+      "Growth Flower"
+    ],
+    "purple": [
+      "Reflection Bloom",
+      "Moonlight Flower",
+      "Starlight Blossom",
+      "Dream Bloom",
+      "Wisdom Flower",
+      "Soul Blossom",
+      "Mindfulness Flower",
+      "Serenity Bloom",
+      "Intuition Flower",
+      "Gentle Blossom"
+    ],
+    "blue": [
+      "Comfort Bloom",
+      "Stillness Flower",
+      "Wave Blossom",
+      "Peace Flower",
+      "Dawn Blossom",
+      "Breeze Flower",
+      "Sky Blossom",
+      "Clarity Flower",
+      "Freedom Blossom",
+      "Cozy Flower"
+    ],
+    "yellow": [
+      "Sunshine Bloom",
+      "Hope Flower",
+      "Laughter Blossom",
+      "Joy Flower",
+      "Sparkle Blossom",
+      "Warmth Flower",
+      "Happiness Blossom",
+      "Morning Flower",
+      "Smile Blossom",
+      "Golden Dream Flower"
+    ]
+  }
+}

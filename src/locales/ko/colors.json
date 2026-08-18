@@ -1,0 +1,35 @@
+[
+  { "hex": "#ef4444", "name": "용기 어린 루비", "meaning": "도전에 마주할 단단한 마음의 힘", "type": "red" },
+  { "hex": "#f43f5e", "name": "수줍은 블러썸", "meaning": "나를 부드럽게 보듬는 자기 연민", "type": "red" },
+  { "hex": "#dc2626", "name": "강렬한 불꽃", "meaning": "정체된 일상을 깨우는 열정의 각성", "type": "red" },
+  { "hex": "#ea580c", "name": "활력의 만다린", "meaning": "기분 좋은 변화를 부르는 긍정의 기운", "type": "yellow" },
+  { "hex": "#f59e0b", "name": "기쁨의 솔레이", "meaning": "어둠 뒤에서 반짝이는 순수한 희망", "type": "yellow" },
+  { "hex": "#eab308", "name": "치유의 시트론", "meaning": "마음을 환하게 밝히는 내면의 환희", "type": "yellow" },
+  { "hex": "#9a3412", "name": "단단한 테라코타", "meaning": "흔들리지 않게 발을 디디는 안정감", "type": "red" },
+  { "hex": "#db2777", "name": "사랑의 쿼츠", "meaning": "상처 입은 내 자아를 포용하는 분홍빛 온기", "type": "red" },
+
+  { "hex": "#16a34a", "name": "안정의 포레스트", "meaning": "복잡한 생각을 잠재우는 고요한 그늘", "type": "green" },
+  { "hex": "#0d9488", "name": "숨결의 세이지", "meaning": "답답한 가슴 속 공기를 정화하는 청량함", "type": "blue" },
+  { "hex": "#059669", "name": "생명의 에메랄드", "meaning": "새로운 희망을 틔워낼 마음의 생명력", "type": "green" },
+  { "hex": "#0891b2", "name": "차분한 터콰이즈", "meaning": "과열된 내면의 이완과 차분한 집중", "type": "blue" },
+  { "hex": "#22c55e", "name": "어린 싹의 연두", "meaning": "서툴러도 괜찮은 새로운 도약의 설렘", "type": "green" },
+  { "hex": "#14b8a6", "name": "치유의 심해", "meaning": "감정의 파도를 포근히 씻어내리는 온정", "type": "blue" },
+  { "hex": "#115e59", "name": "깊은 수풀 이끼", "meaning": "한결같은 자리에서 나를 지켜주는 지지력", "type": "green" },
+  { "hex": "#047857", "name": "새벽 안개 정록", "meaning": "불안을 잠재우고 피어날 안도의 평화", "type": "green" },
+
+  { "hex": "#2563eb", "name": "사색의 투명블루", "meaning": "슬픔에 휩쓸리지 않는 이성적 투명함", "type": "blue" },
+  { "hex": "#7c3aed", "name": "지혜의 자수정", "meaning": "나의 불안을 무찌르고 나아갈 성찰", "type": "purple" },
+  { "hex": "#6366f1", "name": "오로라 라벤더", "meaning": "지친 신경을 어루만지는 보라빛 위안", "type": "purple" },
+  { "hex": "#9333ea", "name": "사색 바이올렛", "meaning": "더 깊은 진짜 자아를 찾아가는 영혼의 여정", "type": "purple" },
+  { "hex": "#3b82f6", "name": "위로의 사사이어", "meaning": "억압했던 감정을 해소하고 누리는 평화", "type": "blue" },
+  { "hex": "#1e3a8a", "name": "심연의 인디고", "meaning": "내면 깊숙이 숨겨둔 소망과 대면하는 밤", "type": "blue" },
+  { "hex": "#8b5cf6", "name": "달빛 속삭임", "meaning": "어둠 속에서도 방향을 잃지 않는 빛", "type": "purple" },
+  { "hex": "#d946ef", "name": "안온한 오팔", "meaning": "분주했던 하루를 감싸 안아주는 고요함", "type": "purple" },
+
+  { "hex": "#FFD700", "name": "황홀한 펄 골드", "meaning": "내면의 무한한 지혜와 존엄함의 각성", "type": "yellow" },
+  { "hex": "#ECEFF1", "name": "신비로운 실버 스타", "meaning": "어떤 흔들림도 정화하는 맑고 깨끗한 내면", "type": "blue" },
+  { "hex": "#EAE5FC", "name": "영롱한 오팔 펄", "meaning": "다채로운 자아의 무한한 잠재력과 창조성", "type": "purple" },
+  { "hex": "#E5A9A9", "name": "우아한 로즈골드 펄", "meaning": "부드럽게 나를 피워내는 따뜻한 자애와 연민", "type": "red" },
+  { "hex": "#A5F3FC", "name": "청량한 아쿠아 스파클", "meaning": "부정적 감정을 씻어내는 맑고 투명한 해소", "type": "blue" },
+  { "hex": "#B7F3D0", "name": "생명의 에메랄드 펄", "meaning": "마음의 상처를 치유하는 싱그러운 자생력", "type": "green" }
+]

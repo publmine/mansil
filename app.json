@@ -1,0 +1,66 @@
+{
+  "expo": {
+    "name": "만다라 온실",
+    "slug": "mandalaonsil",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./assets/images/icon.png",
+    "scheme": "mandalaonsil",
+    "userInterfaceStyle": "automatic",
+    "ios": {
+      "icon": "./assets/images/icon.png"
+    },
+    "android": {
+      "adaptiveIcon": {
+        "backgroundColor": "#0F1D10",
+        "foregroundImage": "./assets/images/icon.png"
+      },
+      "predictiveBackGestureEnabled": false,
+      "package": "com.mandalaonsil.app"
+    },
+    "web": {
+      "output": "static",
+      "favicon": "./assets/images/favicon.png"
+    },
+    "plugins": [
+      "expo-router",
+      [
+        "expo-font",
+        {
+          "fonts": [
+            "./assets/fonts/Pretendard-Regular.ttf",
+            "./assets/fonts/Pretendard-Medium.ttf",
+            "./assets/fonts/Pretendard-SemiBold.ttf",
+            "./assets/fonts/Pretendard-Bold.ttf"
+          ]
+        }
+      ],
+      [
+        "expo-splash-screen",
+        {
+          "backgroundColor": "#090a0c",
+          "image": "./assets/images/splash.png",
+          "imageWidth": 200,
+          "resizeMode": "contain",
+          "android": {
+            "image": "./assets/images/splash.png",
+            "imageWidth": 200
+          }
+        }
+      ],
+      "expo-sharing",
+      "expo-sqlite",
+      "expo-localization"
+    ],
+    "experiments": {
+      "typedRoutes": true,
+      "reactCompiler": false
+    },
+    "extra": {
+      "router": {},
+      "eas": {
+        "projectId": "eb3c77f5-7b5d-4100-a45b-f423e992bde3"
+      }
+    }
+  }
+}

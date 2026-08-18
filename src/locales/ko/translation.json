@@ -1,0 +1,142 @@
+{
+  "common": {
+    "app_title": "만다라 온실",
+    "app_subtitle": "나의 마음을 돌보는 작은 온실",
+    "logo_text": "MANDALA ON-SIL",
+    "confirm": "확인",
+    "cancel": "취소",
+    "save": "저장",
+    "close": "닫기",
+    "next": "다음",
+    "back": "이전",
+    "notice": "안내",
+    "error": "에러",
+    "locked": "잠김",
+    "to_greenhouse": "온실로",
+    "my_greenhouse": "나의 온실",
+    "empty_greenhouse": "온실 비우기",
+    "all": "전체",
+    "garden1": "꽃밭 1",
+    "garden2": "꽃밭 2",
+    "garden3": "꽃밭 3",
+    "bloomed_count": "완개 꽃: {{count}}개",
+    "color_count": "감정색: {{count}}색",
+    "waiting_for_seed": "씨앗 대기 중"
+  },
+  "greenhouse": {
+    "title": "만다라 온실",
+    "subtitle": "나의 마음을 돌보는 작은 온실",
+    "flower_count_status": "{{season}}번째 꽃밭 ({{completed}}/9 완개)",
+    "color_today": "오늘의 마음 채색하기",
+    "flower_fully_bloomed": "온전히 피어난 마음의 꽃입니다.",
+    "butterfly_sanctuary": "나비가 찾아오는 정원",
+    "bee_sanctuary": "꿀벌이 찾아오는 정원",
+    "bird_sanctuary": "파랑새가 찾아오는 정원",
+    "current_pot_level": "Lv.{{level}} {{stage}}",
+    "status_growing": "성장 중",
+    "status_completed": "완개",
+    "empty_pot_letter_title": "마음의 안부 편지",
+    "empty_pot_letter_desc": "아직 자라나고 있는 온실의 꽃이 없습니다. 하단의 오늘의 마음 채색하기를 시작해 소중한 감정의 싹을 파종해 주세요.",
+    "comfort_talk": "위로의 대화"
+  },
+  "color_select": {
+    "step_indicator": "STEP 01. 마음의 컬러 선택",
+    "step_title": "지금 이순간 끌리는 컬러 세 가지를 선택해주세요.",
+    "selected_colors": "선택된 마음의 컬러",
+    "select_all_three": "색상을 3가지 모두 선택해주세요.",
+    "next_coloring": "다음: 만다라 채색하기",
+    "locked_color_title": "봉인된 \n감정의 색",
+    "locked_color_desc": "꽃 두 송이가\n마음의 색을\n깨웁니다.",
+    "extracted": "추출 완료",
+    "extract_emotion": "감정 추출",
+    "enter_drawing": "만다라 드로잉 진입",
+    "selection_count": "컬러 선택 ({{count}}/3)"
+  },
+  "mandala_coloring": {
+    "step_indicator": "STEP 02. 마음의 만다라 채색",
+    "guide": "마음의 컬러를 골라 만다라를 터치하여 마음을 채워보세요.",
+    "reset_selection": "선택 초기화",
+    "reset_canvas": "초기화",
+    "progress": "채색 진행도",
+    "finish_flower": "마음 챙김 완료",
+    "color_more": "채색을 더 진행해주세요 (50% 이상)"
+  },
+  "diary": {
+    "step_indicator": "STEP 03. 마음챙김 카드",
+    "placeholder": "오늘 당신의 마음에 피어난 감정과 생각을 편안하게 적어보세요...",
+    "save_button": "일기 저장하고 꽃 피우기",
+    "write_diary": "마음일기 작성",
+    "edit_diary": "마음일기 수정",
+    "input_required": "일기 내용을 작성해주세요.",
+    "modal_title": "마음일기",
+    "submit": "등록하기",
+    "written_date": "작성일: {{date}}",
+    "empty_diary": "이 단계에서 기록한 마음일기가 없습니다.",
+    "empty_diary_desc": "꽃이 자라나는 각 단계마다 질문 카드에서 마음일기를 기록해 보세요."
+  },
+  "archive": {
+    "title": "나의 온실",
+    "subtitle": "내가 피워낸 소중한 마음의 꽃들",
+    "empty_title": "아직 이곳에 피어난 마음의 기록이 없습니다.",
+    "empty_desc": "만다라 에너지를 공급하여 첫 씨앗을 피워 보세요.",
+    "view_diary": "마음 일기 보기",
+    "reset_modal_title": "온실을 비우시겠습니까?",
+    "reset_modal_desc": "지금까지 가꾼 꽃과 온실의 모든 기록이 삭제됩니다. \n삭제된 기록은 영원히 사라집니다.",
+    "reset_modal_confirm": "비우기",
+    "reset_modal_cancel": "취소"
+  },
+  "sanctuary": {
+    "title": "만다라 온실",
+    "subtitle": "나의 마음을 돌보는 작은 온실",
+    "season_complete_message": "✦ 새로운 계절은 \n더 깊어진 마음의 여정과 함께 찾아옵니다. ✦"
+  },
+  "milestone": {
+    "butterfly_title": "온실에 첫 번째 나비가 찾아왔습니다.",
+    "butterfly_desc": "당신이 피워낸 꽃들이 온실에\n첫 번째 생명을 불러왔습니다.",
+    "butterfly_btn": "🦋 나비 만나기",
+    "second_garden_title": "두 번째 꽃밭이 열렸습니다.",
+    "second_garden_desc": "두 번째 꽃밭을\n가꾸어 보세요.",
+    "start_btn": "시작하기",
+    "bee_title": "온실에 꿀벌이 찾아왔습니다.",
+    "bee_desc": "당신이 피워낸 꽃들이 온실에\n두 번째 생명을 불러왔습니다.",
+    "bee_btn": "🐝 꿀벌 만나기",
+    "third_garden_title": "세 번째 꽃밭이 열렸습니다.",
+    "third_garden_desc": "세 번째 꽃밭을\n가꾸어 보세요.",
+    "bird_title": "온실에 새가 찾아왔습니다.",
+    "bird_desc": "당신이 피워낸 꽃들이 온실에\n세 번째 생명을 불러왔습니다.",
+    "bird_btn": "🐦 새 만나기",
+    "season1_complete_title": "첫 번째 계절이 끝났습니다.",
+    "season1_complete_desc": "당신이 피워낸 스물일곱 송이의 꽃은 하나의 온실을 완성했습니다.\n\n작은 마음들이 모여 생명이 머무는 공간이 되었습니다.",
+    "season1_complete_btn": "완성된 온실 이동"
+  },
+  "toast": {
+    "small_change": "작은 변화가 온실에 쌓이고 있습니다.",
+    "flower_scent_new_life": "꽃향기가 쌓일수록 온실에 새로운 생명이 찾아옵니다.",
+    "butterfly_coming": "꽃향기가 온실 가득 퍼지고 있습니다.\n나비가 찾아올 날이 가까워지고 있어요.",
+    "bee_coming": "꽃향기가 온실 가득 퍼지고 있습니다.\n꿀벌이 찾아올 날이 가까워지고 있어요.",
+    "bird_coming": "꽃향기가 온실 가득 퍼지고 있습니다.\n새가 찾아올 날이 가까워지고 있어요."
+  },
+  "export": {
+    "card_title": "마음챙김 카드 내보내기",
+    "card_downloaded": "나의 온실 속 꽃 [{{name}}]의 감정 성장 카드가 성공적으로 다운로드되었습니다!",
+    "card_area_not_found": "공유할 카드 영역을 찾을 수 없습니다.",
+    "share_not_supported": "이 기기에서는 공유 기능을 지원하지 않습니다.",
+    "design_area_not_found": "도안 영역을 찾을 수 없습니다.",
+    "design_downloaded": "만다라 도안이 성공적으로 다운로드되었습니다!",
+    "share_flower": "오늘의 꽃 전하기",
+    "onsil_story": "온실 이야기"
+  },
+  "settings": {
+    "title": "설정",
+    "community": "공식 커뮤니티",
+    "privacy_policy": "개인정보처리방침"
+  },
+  "growth_stages": {
+    "stage_0": "씨앗",
+    "stage_1": "새싹",
+    "stage_2": "꽃봉오리",
+    "stage_3": "개화 직전",
+    "stage_4": "만개 직전",
+    "stage_5": "완전한 개화"
+  }
+}
