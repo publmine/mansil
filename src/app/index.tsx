@@ -39,7 +39,7 @@ import { styles } from './index.styles';
 
 // Screen Dimensions
 const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
-const CANVAS_SIZE = Math.min(315, SCREEN_WIDTH - 36);
+const CANVAS_SIZE = Math.min(330, SCREEN_WIDTH - 24);
 const WHEEL_SIZE = Math.min(360, SCREEN_WIDTH * 0.95);
 
 // Reanimated floating firefly component
@@ -1337,13 +1337,13 @@ const FloatingButterfly: React.FC<{ id: number; startX: number; startY: number }
       true
     );
 
-    // 화면 중앙(48%) 기준 좌우 밸런스 비행 (좌측 치우침 완전 해소: -35px ~ +95px)
+    // 온실 좌측 및 상단 허공을 우아하게 유영하는 나비 비행 궤적 (우측 꿀벌과 겹치지 않게 분리)
     const targets = [
-      { x: 0, y: -10 },   // 중앙 상단
-      { x: 75, y: 15 },   // 우측 상단
-      { x: 35, y: -25 },  // 중앙 우측
-      { x: -35, y: 10 },  // 좌측 중앙
-      { x: 90, y: 5 },    // 우측 가든
+      { x: -15, y: -15 },  // 꽃봉오리 좌상단
+      { x: -45, y: 10 },   // 좌측 잎사귀 상공
+      { x: 10, y: -30 },   // 꽃봉오리 위쪽
+      { x: -55, y: -5 },   // 좌측 허공
+      { x: -25, y: 5 },    // 좌측 줄기 부근
     ];
     let step = 0;
 
@@ -4176,7 +4176,7 @@ export default function HomeScreen() {
               { zIndex: 30, justifyContent: 'center', alignItems: 'center' }
             ]}
           >
-            <FloatingButterfly id={0} startX={0} startY={-80} />
+            <FloatingButterfly id={0} startX={0} startY={-140} />
           </View>
         )
       }
@@ -4193,7 +4193,7 @@ export default function HomeScreen() {
               { zIndex: 25, justifyContent: 'center', alignItems: 'center' }
             ]}
           >
-            <FloatingButterfly id={99} startX={-20} startY={-80} />
+            <FloatingButterfly id={99} startX={-65} startY={-148} />
           </View>
         )
       }
@@ -4210,7 +4210,7 @@ export default function HomeScreen() {
               { zIndex: 26, justifyContent: 'center', alignItems: 'center' }
             ]}
           >
-            <FloatingBee id={88} startX={25} startY={-65} />
+            <FloatingBee id={88} startX={62} startY={-140} />
           </View>
         )
       }
@@ -4227,7 +4227,7 @@ export default function HomeScreen() {
               { zIndex: 30, justifyContent: 'center', alignItems: 'center' }
             ]}
           >
-            <FloatingBee id={1} startX={0} startY={-80} />
+            <FloatingBee id={1} startX={40} startY={-140} />
           </View>
         )
       }

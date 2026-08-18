@@ -211,23 +211,16 @@ const ILLUSTRATOR_BUTTERFLY_SUBPATHS = [
   "M256.667,431.768c4.036-0.34,6.235-2.376,8.144-4.763c3.435-4.293,5.388-9.327,6.984-14.517c0.091-0.295,0.055-0.629,0.078-0.944c-0.305,0.073-0.621,0.114-0.911,0.223c-2.34,0.877-4.613,2.029-7.023,2.602c-7.093,1.684-13.942,0.839-20.428-2.587c-0.29-0.153-0.605-0.258-0.909-0.384c0.029,0.354-0.015,0.735,0.1,1.06c0.65,1.836,1.256,3.694,2.029,5.479c1.894,4.369,4.017,8.637,7.886,11.633C253.976,430.621,255.67,431.239,256.667,431.768z"
 ];
 
-export const BUTTERFLY_TYPES_LIST = [
-  { name: "봄나비", type: "swallowtail" },
-  { name: "구름나비", type: "monarch" },
-  { name: "꽃송이나비", type: "fairy" },
-  { name: "물방울나비", type: "celestial" },
-  { name: "호랑나비", type: "blossom" },
-  { name: "나뭇잎나비", type: "rainbow" },
-  { name: "이슬나비", type: "silver" },
-  { name: "달빛나비", type: "moonlight" },
-  { name: "별빛나비", type: "spring" },
-  { name: "하트나비", type: "blue" },
-  { name: "잎새나비", type: "golden" },
-  { name: "비단나비", type: "silk" },
-  { name: "하늘나비", type: "sky" },
-  { name: "리본나비", type: "yellow" },
-  { name: "분홍나비", type: "pink" }
+const BUTTERFLY_TYPE_SLUGS = [
+  "swallowtail", "monarch", "fairy", "celestial", "blossom",
+  "rainbow", "silver", "nightfall", "starlight", "heart",
+  "foliage", "silk", "sky", "ribbon", "moonlight"
 ];
+
+export const BUTTERFLY_TYPES_LIST = Object.keys(mandalaNamesKo.butterflies.names).map((nameKey, idx) => ({
+  name: nameKey,
+  type: BUTTERFLY_TYPE_SLUGS[idx % BUTTERFLY_TYPE_SLUGS.length]
+}));
 
 const generateButterflyTemplates = (count: number): MandalaTemplate[] => {
   const templates: MandalaTemplate[] = [];

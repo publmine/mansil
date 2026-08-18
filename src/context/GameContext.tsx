@@ -121,7 +121,13 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
         }
 
         const service = new GameService(potRepo, diaryRepo, gardenRepo, creatureRepo);
-        const fullState = await service.loadFullState();
+        const currentArchive = await potRepo.getArchive();
+        let fullState: GameState;
+        if (currentArchive.some(p => p.templateId === 'flower_8' || p.templateId === 'butterfly_8' || p.templateId === 'beebird_8')) {
+          fullState = await service.resetGame();
+        } else {
+          fullState = await service.loadFullState();
+        }
 
         if (isMounted) {
           setGameService(service);

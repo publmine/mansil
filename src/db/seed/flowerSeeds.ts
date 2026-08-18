@@ -1,5 +1,5 @@
 import { ALL_MANDALA_20, ALL_BUTTERFLY_MANDALA_45, ALL_BEE_BIRD_MANDALA_45, isEn } from '@/constants/healing-data';
-import { Pot } from '@/domain/pot';
+import { ArchivedPlant, Pot } from '@/domain/pot';
 
 export const initialPotsSeed = (season = 1): Pot[] => {
   const templatePool = season >= 3 ? ALL_BEE_BIRD_MANDALA_45 : season === 2 ? ALL_BUTTERFLY_MANDALA_45 : ALL_MANDALA_20;
