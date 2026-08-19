@@ -129,6 +129,9 @@
   "settings": {
     "title": "Settings",
     "community": "Official Community",
+    "app_info": "App Information",
+    "app_info_title": "App Information",
+    "app_info_desc": "Mandala Onsil is an offline healing app that safely keeps your data on your device without requiring an account.\n\nIf you delete the app or switch devices, your journals and flower collection may not be recoverable.\n\nPurchased content can always be restored through Google Play at no additional cost.",
     "privacy_policy": "Privacy Policy"
   },
   "growth_stages": {
@@ -138,5 +141,27 @@
     "stage_3": "First Leaves",
     "stage_4": "Bud",
     "stage_5": "Full Bloom"
+  },
+  "premium_modal": {
+    "title": "Your First Flower Has Bloomed.",
+    "desc1": "The blooming of a flower is not an ending,but the start of a new journey.",
+    "desc2": "Many more flowers and stories are waiting to unfold in your greenhouse.",
+    "desc3": "Keep nurturing your greenhouse.",
+    "cancel": "Maybe Later",
+    "unlock_btn": "Continue Greenhouse $1.99",
+    "benefit_notice": "Access all available flowers and stories",
+    "restore": "Restore Purchases",
+    "restore_success": "Purchases have been successfully restored.",
+    "restore_empty": "No prior purchases found."
+  },
+  "premium_banner": {
+    "text": "Unlock all flowers and stories in the greenhouse",
+    "btn": "Continue Greenhouse $1.99"
+  },
+  "onboarding_notice": {
+    "desc1": "Mandala Onsil is an offline healing app that safely keeps your data on your device without requiring an account.",
+    "desc2": "If you delete the app or switch devices, your journals and flower collection may not be recoverable.",
+    "desc3": "Purchased content can always be restored through Google Play at no additional cost.",
+    "start_btn": "Start Growing"
   }
 }

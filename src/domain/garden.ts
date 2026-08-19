@@ -3,4 +3,5 @@ export interface GardenState {
   currentPotIndex: number;
   shownMessages: string[];
   usedTemplateIds: string[];
+  isPremiumUnlocked?: boolean;
 }

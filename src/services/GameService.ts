@@ -137,6 +137,7 @@ export class GameService {
       hasButterfly: butterfly,
       hasBee: bee,
       hasBird: bird,
+      isPremiumUnlocked: gardenState.isPremiumUnlocked || false,
     };
   }
 
@@ -247,6 +248,10 @@ export class GameService {
       }
 
       if (idx === state.currentPotIndex + 1 && nextLevel === 5 && idx < 9) {
+        // If finishing first pot and premium is not unlocked yet, keep next pot locked until purchased
+        if (state.currentPotIndex === 0 && !state.isPremiumUnlocked) {
+          return p;
+        }
         const nextPotTemplateId = templatePool[(idx * 5) % templatePool.length].id;
         return {
           ...p,
@@ -369,5 +374,34 @@ export class GameService {
     if (season >= 4) await this.creatureRepo.setCreatureUnlocked('bird', true);
 
     return this.loadFullState();
+  }
+
+  async unlockPremiumGarden(state: GameState): Promise<GameState> {
+    await this.gardenRepo.saveGardenState({ isPremiumUnlocked: true });
+
+    // If first pot is already fully bloomed, unlock the second pot now
+    let updatedPots = [...state.pots];
+    if (updatedPots.length > 1 && updatedPots[0].level >= 5 && updatedPots[1].status === 'locked') {
+      const templatePool = state.hasBee || state.hasBird ? ALL_BEE_BIRD_MANDALA_45 : state.hasButterfly ? ALL_BUTTERFLY_MANDALA_45 : ALL_MANDALA_20;
+      const nextPotTemplateId = templatePool[5 % templatePool.length].id;
+      const emptySoilName = isEn() ? "Empty Soil" : "비어있는 흙";
+
+      updatedPots[1] = {
+        ...updatedPots[1],
+        status: 'unlocked',
+        name: emptySoilName,
+        level: 0,
+        desc: '',
+        templateId: nextPotTemplateId,
+        messageIndex: (updatedPots[0].messageIndex ?? 0) + 1
+      };
+      await this.potRepo.saveAllPots(updatedPots);
+    }
+
+    return {
+      ...state,
+      isPremiumUnlocked: true,
+      pots: updatedPots
+    };
   }
 }

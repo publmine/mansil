@@ -15,4 +15,5 @@ export interface GameState {
   hasButterfly?: boolean;
   hasBee?: boolean;
   hasBird?: boolean;
+  isPremiumUnlocked?: boolean;
 }

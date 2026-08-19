@@ -48,6 +48,7 @@ interface GameContextType {
   startSecondGarden: () => Promise<void>;
   startThirdGarden: () => Promise<void>;
   startFourthGarden: () => Promise<void>;
+  unlockPremiumGarden: () => Promise<void>;
   writeDiary: (potId: number, level: number, question: string, content: string) => void;
 }
 
@@ -127,6 +128,22 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
           fullState = await service.resetGame();
         } else {
           fullState = await service.loadFullState();
+        }
+
+        // ==========================================
+        // [IN-APP PURCHASE] 앱 실행 시 구글 구매 내역 백그라운드 자동 복원
+        // 기기 변경 / 재설치 시에도 구글 계정에 구매 이력이 있으면 자동 언락됩니다.
+        // ==========================================
+        if (!fullState.isPremiumUnlocked) {
+          try {
+            // TODO: 결제 라이브러리 연동 시 활성화 (예: RevenueCat)
+            // const customerInfo = await Purchases.getCustomerInfo();
+            // if (customerInfo.entitlements.active['premium']) {
+            //   fullState = await service.unlockPremiumGarden(fullState);
+            // }
+          } catch (restoreErr) {
+            console.warn('Silent restore failed:', restoreErr);
+          }
         }
 
         if (isMounted) {
@@ -350,6 +367,16 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   };
 
+  const unlockPremiumGarden = async () => {
+    if (!gameService) return;
+    try {
+      const newState = await gameService.unlockPremiumGarden(state);
+      setState(newState);
+    } catch (e) {
+      console.error('Failed to unlock premium garden:', e);
+    }
+  };
+
   return (
     <GameContext.Provider
       value={{
@@ -374,6 +401,7 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
         startSecondGarden,
         startThirdGarden,
         startFourthGarden,
+        unlockPremiumGarden,
         writeDiary,
       }}
     >

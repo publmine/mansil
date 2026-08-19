@@ -31,7 +31,8 @@ import { ThemedView } from '@/components/themed-view';
 import { HealingColor, STEP_DETAILS_JSON, getHealingColors, getStepDetailsForSeason, getTemplateById, isEn } from '@/constants/healing-data';
 import { MaxContentWidth, Spacing } from '@/constants/theme';
 import { ArchivedPlant, DiaryEntry, useGame } from '@/context/GameContext';
-import { playSoundEffect } from '@/services/feedback';
+import { playSoundEffect, triggerHaptic } from '@/services/feedback';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as Sharing from 'expo-sharing';
 import { useTranslation } from 'react-i18next';
 import { captureRef } from 'react-native-view-shot';
@@ -2039,8 +2040,70 @@ export default function HomeScreen() {
     startSecondGarden,
     startThirdGarden,
     startFourthGarden,
+    unlockPremiumGarden,
     writeDiary
   } = useGame();
+
+  const [isPremiumModalOpen, setIsPremiumModalOpen] = useState(false);
+
+  // ---- 최초 1회 오프라인 안내 온보딩 모달 ----
+  const [showOnboardingNotice, setShowOnboardingNotice] = useState(false);
+
+  useEffect(() => {
+    const checkOnboardingNotice = async () => {
+      try {
+        const seen = await AsyncStorage.getItem('HAS_SEEN_ONBOARDING_NOTICE_V1');
+        if (!seen) {
+          setShowOnboardingNotice(true);
+        }
+      } catch {
+        // Fail silently
+      }
+    };
+    if (isLoaded) {
+      checkOnboardingNotice();
+    }
+  }, [isLoaded]);
+
+  const handleCloseOnboardingNotice = async () => {
+    try {
+      await AsyncStorage.setItem('HAS_SEEN_ONBOARDING_NOTICE_V1', 'true');
+    } catch {
+      // Fail silently
+    }
+    triggerHaptic('medium');
+    setShowOnboardingNotice(false);
+  };
+
+  // ==========================================
+  // [IN-APP PURCHASE] 구글 플레이 인앱 결제 API 연동부
+  // 추후 react-native-iap 또는 RevenueCat 연동 시 아래 핸들러에 연결하세요.
+  // ==========================================
+  const handlePurchasePremium = async () => {
+    try {
+      // TODO: 실제 결제 API 호출 (예: await Purchases.purchasePackage(package))
+      await unlockPremiumGarden();
+      setIsPremiumModalOpen(false);
+      triggerHaptic('success');
+      playSoundEffect(523.25, 'sine', 1.0);
+      showToast(t('premium_modal.restore_success'));
+    } catch (error) {
+      console.error('Purchase error:', error);
+      showModal(t('common.error'), '결제 처리 중 오류가 발생했습니다.');
+    }
+  };
+
+  const handleRestorePurchases = async () => {
+    try {
+      // TODO: 실제 구매 내역 복원 API 호출 (예: await Purchases.restorePurchases())
+      await unlockPremiumGarden();
+      setIsPremiumModalOpen(false);
+      showToast(t('premium_modal.restore_success'));
+    } catch (error) {
+      console.error('Restore error:', error);
+      showModal(t('common.error'), '구매 내역 복원 중 오류가 발생했습니다.');
+    }
+  };
 
   const cardRef = useRef<View>(null);
   const designRef = useRef<View>(null);
@@ -2901,8 +2964,14 @@ export default function HomeScreen() {
                   return (
                     <Pressable
                       key={pot.id}
-                      disabled={isLocked}
                       onPress={() => {
+                        if (isLocked) {
+                          playSoundEffect(250, 'triangle', 0.2);
+                          if (!state.isPremiumUnlocked && (state.archive.length >= 1 || (state.pots[0] && state.pots[0].level >= 5))) {
+                            setIsPremiumModalOpen(true);
+                          }
+                          return;
+                        }
                         playSoundEffect(350 + (idx * 50));
                         setCurrentPotIndex(idx);
                       }}
@@ -2991,28 +3060,52 @@ export default function HomeScreen() {
                 })}
               </ScrollView>
 
-              <Pressable
-                disabled={activePot && activePot.level >= 5}
-                style={[
-                  styles.actionBtn,
-                  activePot && activePot.level >= 5 && styles.actionBtnDisabled
-                ]}
-                onPress={() => {
-                  resetSelection();
-                  randomizeActivePotTemplate();
-                  navigateTo('color-select');
-                }}
-              >
-                <ThemedText
-                  type="default"
+              {activePot && activePot.level >= 5 ? (
+                <Pressable
                   style={[
-                    styles.actionBtnText,
-                    activePot && activePot.level >= 5 && styles.actionBtnTextDisabled
+                    styles.actionBtn,
+                    state.isPremiumUnlocked && styles.actionBtnDisabled,
+                    !state.isPremiumUnlocked && {
+                      backgroundColor: 'rgba(38, 70, 34, 0.95)',
+                      borderColor: '#81C784',
+                      borderWidth: 1.5,
+                    }
                   ]}
+                  onPress={() => {
+                    if (!state.isPremiumUnlocked) {
+                      playSoundEffect(440, 'sine', 0.5);
+                      setIsPremiumModalOpen(true);
+                    }
+                  }}
                 >
-                  {activePot && activePot.level >= 5 ? t('greenhouse.flower_fully_bloomed') : t('greenhouse.color_today')}
-                </ThemedText>
-              </Pressable>
+                  <ThemedText
+                    type="default"
+                    style={[
+                      styles.actionBtnText,
+                      state.isPremiumUnlocked && styles.actionBtnTextDisabled,
+                      !state.isPremiumUnlocked && { color: '#E8F5E9', fontWeight: '600' }
+                    ]}
+                  >
+                    {t('greenhouse.flower_fully_bloomed')}
+                  </ThemedText>
+                </Pressable>
+              ) : (
+                <Pressable
+                  style={styles.actionBtn}
+                  onPress={() => {
+                    resetSelection();
+                    randomizeActivePotTemplate();
+                    navigateTo('color-select');
+                  }}
+                >
+                  <ThemedText
+                    type="default"
+                    style={styles.actionBtnText}
+                  >
+                    {t('greenhouse.color_today')}
+                  </ThemedText>
+                </Pressable>
+              )}
             </View>
           </>
         )}
@@ -4732,6 +4825,29 @@ export default function HomeScreen() {
                 </Svg>
               </Pressable>
 
+              {/* 서비스 정보 (앱 정보) */}
+              <Pressable
+                style={styles.settingsMenuItem}
+                onPress={() => {
+                  showModal(
+                    t('settings.app_info_title'),
+                    t('settings.app_info_desc')
+                  );
+                }}
+              >
+                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
+                  <Svg width={20} height={20} viewBox="0 0 24 24" fill="none" stroke="#FFEAA7" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
+                    <Circle cx="12" cy="12" r="10" />
+                    <Line x1="12" y1="16" x2="12" y2="12" />
+                    <Line x1="12" y1="8" x2="12.01" y2="8" />
+                  </Svg>
+                  <ThemedText style={styles.settingsMenuText}>{t('settings.app_info')}</ThemedText>
+                </View>
+                <Svg width={16} height={16} viewBox="0 0 24 24" fill="none" stroke="#9A9FB0" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
+                  <Path d="M9 18l6-6-6-6" />
+                </Svg>
+              </Pressable>
+
               {/* 개인정보처리방침 */}
               <Pressable
                 style={styles.settingsMenuItem}
@@ -4762,6 +4878,225 @@ export default function HomeScreen() {
             >
               <ThemedText style={styles.modalOkText}>{t('common.close')}</ThemedText>
             </Pressable>
+          </View>
+        </View>
+      </Modal>
+
+      {/* ------------------------------------------------------------- */}
+      {/* PREMIUM GARDEN UNLOCK MODAL (온실 계속 가꾸기 결제 모달) */}
+      {/* ------------------------------------------------------------- */}
+      <Modal
+        visible={isPremiumModalOpen}
+        transparent={true}
+        animationType="fade"
+        onRequestClose={() => setIsPremiumModalOpen(false)}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={{
+            width: '98%',
+            maxWidth: 380,
+            borderRadius: 24,
+            backgroundColor: '#10160c',
+            borderWidth: 1.5,
+            borderColor: '#758651',
+            paddingVertical: 24,
+            paddingHorizontal: 12,
+            shadowColor: '#758651',
+            shadowOffset: { width: 0, height: 4 },
+            shadowOpacity: 0.25,
+            shadowRadius: 16,
+            elevation: 10
+          }}>
+            {/* Header Icon / Badge */}
+            <View style={{ alignItems: 'center', marginBottom: 14 }}>
+              <View style={{
+                width: 54,
+                height: 54,
+                borderRadius: 27,
+                backgroundColor: 'rgba(35, 65, 42, 0.75)',
+                borderWidth: 1.5,
+                borderColor: 'rgba(168, 230, 207, 0.7)',
+                justifyContent: 'center',
+                alignItems: 'center',
+                marginBottom: 10,
+                shadowColor: '#A8E6CF',
+                shadowOffset: { width: 0, height: 0 },
+                shadowOpacity: 0.5,
+                shadowRadius: 12,
+              }}>
+                <Image
+                  source={require('../../assets/images/flow2.png')}
+                  style={{ width: 30, height: 30 }}
+                  resizeMode="contain"
+                />
+              </View>
+              <ThemedText style={{ fontSize: 19, fontWeight: '600', color: '#F4FAF3', textAlign: 'center' }}>
+                {t('premium_modal.title')}
+              </ThemedText>
+            </View>
+
+            {/* Poetic Message */}
+            <View style={{
+              backgroundColor: 'rgba(255, 255, 255, 0.05)',
+              borderRadius: 16,
+              paddingVertical: 14,
+              paddingHorizontal: 14,
+              marginBottom: 14,
+              borderWidth: 1,
+              borderColor: 'rgba(255, 255, 255, 0.08)'
+            }}>
+              <ThemedText style={{ fontSize: 13, lineHeight: 20, color: 'rgb(184, 178, 142)', textAlign: 'center', fontWeight: '400', marginBottom: 8 }}>
+                {t('premium_modal.desc1')}
+              </ThemedText>
+              <ThemedText style={{ fontSize: 13, lineHeight: 20, color: 'rgb(184, 178, 142)', textAlign: 'center', fontWeight: '400', marginBottom: 8 }}>
+                {t('premium_modal.desc2')}
+              </ThemedText>
+              <ThemedText style={{ fontSize: 13.5, lineHeight: 20, color: 'rgb(184, 178, 142)', fontWeight: '600', textAlign: 'center' }}>
+                {t('premium_modal.desc3')}
+              </ThemedText>
+            </View>
+
+            {/* Benefit Notice */}
+            <ThemedText style={{ fontSize: 11, color: 'rgb(184, 178, 142)', textAlign: 'center', marginBottom: 16, fontWeight: '400', opacity: 0.9 }}>
+              {t('premium_modal.benefit_notice')}
+            </ThemedText>
+
+            {/* Action Buttons */}
+            <View style={{ flexDirection: 'row', gap: 8, marginBottom: 12 }}>
+              <Pressable
+                style={{
+                  flex: 1,
+                  paddingVertical: 13,
+                  borderRadius: 14,
+                  backgroundColor: 'rgba(255, 255, 255, 0.08)',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  borderWidth: 1,
+                  borderColor: 'rgba(255, 255, 255, 0.12)'
+                }}
+                onPress={() => setIsPremiumModalOpen(false)}
+              >
+                <ThemedText style={{ fontSize: 13.5, fontWeight: '600', color: '#B0BEC5' }}>
+                  {t('premium_modal.cancel')}
+                </ThemedText>
+              </Pressable>
+
+              <Pressable
+                style={{
+                  flex: 2,
+                  paddingVertical: 13,
+                  borderRadius: 14,
+                  backgroundColor: '#2E5E28',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  borderWidth: 1.5,
+                  borderColor: '#81C784',
+                  shadowColor: '#81C784',
+                  shadowOffset: { width: 0, height: 3 },
+                  shadowOpacity: 0.35,
+                  shadowRadius: 8,
+                }}
+                onPress={handlePurchasePremium}
+              >
+                <ThemedText style={{ fontSize: 13.5, fontWeight: '700', color: '#FFFFFF' }}>
+                  {t('premium_modal.unlock_btn')}
+                </ThemedText>
+              </Pressable>
+            </View>
+
+            {/* Restore Purchases Link */}
+            <Pressable
+              style={{ alignItems: 'center', paddingVertical: 2 }}
+              onPress={handleRestorePurchases}
+            >
+              <ThemedText style={{ fontSize: 11, color: '#78909C', textDecorationLine: 'underline' }}>
+                {t('premium_modal.restore')}
+              </ThemedText>
+            </Pressable>
+          </View>
+        </View>
+      </Modal>
+
+      {/* ------------------------------------------------------------- */}
+      {/* FIRST-TIME ONBOARDING OFFLINE DATA NOTICE MODAL */}
+      {/* ------------------------------------------------------------- */}
+      <Modal
+        visible={showOnboardingNotice}
+        transparent={true}
+        animationType="fade"
+      >
+        <View style={[styles.modalOverlay, { backgroundColor: 'rgba(0, 0, 0, 0.85)', padding: 0 }]}>
+          <View style={{
+            width: '100%',
+            height: '100%',
+            backgroundColor: '#0D1410',
+            justifyContent: 'flex-end',
+          }}>
+            {/* Background Image: load2.png (KO) / load2_en.png (EN) */}
+            <Image
+              source={
+                isEn()
+                  ? require('../../assets/images/load2_en.png')
+                  : require('../../assets/images/load2.png')
+              }
+              style={[
+                StyleSheet.absoluteFill,
+                { width: '100%', height: '100%' }
+              ]}
+              resizeMode="cover"
+            />
+
+            {/* Inner Content Positioned at Bottom */}
+            <View style={{ paddingBottom: Platform.OS === 'ios' ? 44 : 28, paddingHorizontal: 20, paddingTop: 16 }}>
+              {/* Golden Notice Text Box */}
+              <View style={{
+                backgroundColor: 'rgba(16, 22, 12, 0.88)',
+                borderRadius: 18,
+                paddingVertical: 20,
+                paddingHorizontal: 16,
+                marginBottom: 20,
+                borderWidth: 1.5,
+                borderColor: '#758651',
+                shadowColor: '#758651',
+                shadowOffset: { width: 0, height: 4 },
+                shadowOpacity: 0.35,
+                shadowRadius: 12,
+              }}>
+                <ThemedText style={{ fontSize: 13.5, lineHeight: 22, color: 'rgb(184, 178, 142)', textAlign: 'center', marginBottom: 14, fontWeight: '400' }}>
+                  {t('onboarding_notice.desc1')}
+                </ThemedText>
+                <ThemedText style={{ fontSize: 13.5, lineHeight: 22, color: 'rgb(184, 178, 142)', textAlign: 'center', marginBottom: 14, fontWeight: '400' }}>
+                  {t('onboarding_notice.desc2')}
+                </ThemedText>
+                <ThemedText style={{ fontSize: 14, lineHeight: 22, color: 'rgb(184, 178, 142)', textAlign: 'center', fontWeight: '600' }}>
+                  {t('onboarding_notice.desc3')}
+                </ThemedText>
+              </View>
+
+              {/* Start Button */}
+              <Pressable
+                style={{
+                  width: '100%',
+                  paddingVertical: 14,
+                  borderRadius: 16,
+                  backgroundColor: '#2E5E28',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  borderWidth: 1.5,
+                  borderColor: '#E5C07B',
+                  shadowColor: '#E5C07B',
+                  shadowOffset: { width: 0, height: 4 },
+                  shadowOpacity: 0.4,
+                  shadowRadius: 10,
+                  elevation: 5
+                }}
+                onPress={handleCloseOnboardingNotice}
+              >
+                <ThemedText style={{ fontSize: 15, fontWeight: '700', color: '#FFFFFF', letterSpacing: 0.3 }}>
+                  {t('onboarding_notice.start_btn')}
+                </ThemedText>
+              </Pressable>
+            </View>
           </View>
         </View>
       </Modal>

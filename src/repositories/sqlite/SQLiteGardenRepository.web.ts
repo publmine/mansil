@@ -15,7 +15,7 @@ export class SQLiteGardenRepository implements IGardenRepository {
     } catch (e) {
       console.warn('getGardenState web error:', e);
     }
-    return { score: 250, currentPotIndex: 0, shownMessages: [], usedTemplateIds: [] };
+    return { score: 250, currentPotIndex: 0, shownMessages: [], usedTemplateIds: [], isPremiumUnlocked: false };
   }
 
   async saveGardenState(state: Partial<GardenState>): Promise<void> {
