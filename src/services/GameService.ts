@@ -66,7 +66,7 @@ export class GameService {
         const tempId = templatePool[((i - 1) * 5) % templatePool.length].id;
         pots.push({
           id: i,
-          name: isEn() ? "New Seed Empty Soil" : "새씨앗 비어있는 흙",
+          name: isEn() ? "Empty Soil" : "비어있는 흙",
           adj: "",
           noun: "",
           level: 0,

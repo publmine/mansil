@@ -2912,61 +2912,74 @@ export default function HomeScreen() {
                         isLocked && styles.potCardLocked,
                       ]}
                     >
-                      {isLocked ? (
-                        <Image
-                          source={require('../../assets/images/lock.png')}
-                          style={{ width: 25, height: 25, marginBottom: 4 }}
-                          resizeMode="contain"
-                        />
-                      ) : pot.level === 5 ? (
-                        <View style={{
-                          width: 32,
-                          height: 32,
-                          borderRadius: 16,
-                          backgroundColor: 'rgba(20, 32, 18, 0.85)',
-                          borderWidth: 1,
-                          borderColor: 'rgba(90, 135, 75, 0.45)',
-                          justifyContent: 'center',
-                          alignItems: 'center',
-                          marginBottom: 4
-                        }}>
+                      <View style={{
+                        width: 32,
+                        height: 32,
+                        justifyContent: 'flex-end',
+                        alignItems: "center",
+                      }}>
+                        {isLocked ? (
                           <Image
-                            source={require('../../assets/images/flow2.png')}
-                            style={{ width: 22, height: 22 }}
+                            source={require('../../assets/images/lock.png')}
+                            style={{ width: 25, height: 25, marginBottom: 4 }}
                             resizeMode="contain"
                           />
-                        </View>
-                      ) : pot.level === 0 || pot.level === 1 ? (
-                        <Image
-                          source={require('../../assets/images/seed.png')}
-                          style={{ width: 22, height: 22, marginBottom: 4 }}
-                          resizeMode="contain"
-                        />
-                      ) : pot.level === 2 ? (
-                        <Image
-                          source={require('../../assets/images/process_ing.png')}
-                          style={{ width: 22, height: 22, marginBottom: 4 }}
-                          resizeMode="contain"
-                        />
-                      ) : pot.level === 3 ? (
-                        <Image
-                          source={require('../../assets/images/lev.png')}
-                          style={{ width: 22, height: 22, marginBottom: 4 }}
-                          resizeMode="contain"
-                        />
-                      ) : pot.level === 4 ? (
-                        <Image
-                          source={require('../../assets/images/process_mid.png')}
-                          style={{ width: 22, height: 22, marginBottom: 4 }}
-                          resizeMode="contain"
-                        />
-                      ) : (
-                        <Image
-                          source={require('../../assets/images/process_done.png')}
-                          style={{ width: 22, height: 22, marginBottom: 4 }}
-                          resizeMode="contain"
-                        />
-                      )}
+                        ) : pot.level === 5 ? (
+                          <View style={{
+                            width: 32,
+                            height: 32,
+                            borderRadius: 16,
+                            backgroundColor: 'rgba(20, 32, 18, 0.85)',
+                            borderWidth: 1,
+                            borderColor: 'rgba(90, 135, 75, 0.45)',
+                            justifyContent: 'center',
+                            alignItems: 'center',
+                            marginBottom: 4
+                          }}>
+                            <Image
+                              source={require('../../assets/images/flow2.png')}
+                              style={{ width: 22, height: 22 }}
+                              resizeMode="contain"
+                            />
+                          </View>
+                        ) : pot.level === 0 ? (
+                          <Image
+                            source={require('../../assets/images/step0.png')}
+                            style={{ width: 22, height: 22, marginBottom: 4 }}
+                            resizeMode="contain"
+                          />
+                        ) : pot.level === 1 ? (
+                          <Image
+                            source={require('../../assets/images/seed.png')}
+                            style={{ width: 22, height: 22, marginBottom: 4 }}
+                            resizeMode="contain"
+                          />
+                        ) : pot.level === 2 ? (
+                          <Image
+                            source={require('../../assets/images/process_ing.png')}
+                            style={{ width: 22, height: 22, marginBottom: 4 }}
+                            resizeMode="contain"
+                          />
+                        ) : pot.level === 3 ? (
+                          <Image
+                            source={require('../../assets/images/lev.png')}
+                            style={{ width: 22, height: 22, marginBottom: 4 }}
+                            resizeMode="contain"
+                          />
+                        ) : pot.level === 4 ? (
+                          <Image
+                            source={require('../../assets/images/process_mid.png')}
+                            style={{ width: 22, height: 22, marginBottom: 4 }}
+                            resizeMode="contain"
+                          />
+                        ) : (
+                          <Image
+                            source={require('../../assets/images/process_done.png')}
+                            style={{ width: 22, height: 22, marginBottom: 4 }}
+                            resizeMode="contain"
+                          />
+                        )}
+                      </View>
                       <ThemedText type="smallBold" style={styles.potCardName} numberOfLines={1}>
                         {pot.name}
                       </ThemedText>
