@@ -156,7 +156,8 @@
   },
   "premium_banner": {
     "text": "Unlock all flowers and stories in the greenhouse",
-    "btn": "Continue Greenhouse $1.99"
+    "btn": "Continue Greenhouse $1.99",
+    "next_flower_waiting": "The next flower is waiting."
   },
   "onboarding_notice": {
     "desc1": "Mandala Onsil is an offline healing app that safely keeps your data on your device without requiring an account.",

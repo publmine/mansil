@@ -32,11 +32,11 @@ import { HealingColor, STEP_DETAILS_JSON, getHealingColors, getStepDetailsForSea
 import { MaxContentWidth, Spacing } from '@/constants/theme';
 import { ArchivedPlant, DiaryEntry, useGame } from '@/context/GameContext';
 import { playSoundEffect, triggerHaptic } from '@/services/feedback';
+import { styles } from '@/styles/index.styles';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as Sharing from 'expo-sharing';
 import { useTranslation } from 'react-i18next';
 import { captureRef } from 'react-native-view-shot';
-import { styles } from './index.styles';
 
 // Screen Dimensions
 const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
@@ -3086,7 +3086,9 @@ export default function HomeScreen() {
                       !state.isPremiumUnlocked && { color: '#E8F5E9', fontWeight: '600' }
                     ]}
                   >
-                    {t('greenhouse.flower_fully_bloomed')}
+                    {!state.isPremiumUnlocked
+                      ? t('premium_banner.next_flower_waiting')
+                      : t('greenhouse.flower_fully_bloomed')}
                   </ThemedText>
                 </Pressable>
               ) : (
@@ -4891,9 +4893,9 @@ export default function HomeScreen() {
         animationType="fade"
         onRequestClose={() => setIsPremiumModalOpen(false)}
       >
-        <View style={styles.modalOverlay}>
+        <View style={[styles.modalOverlay, { paddingHorizontal: 16 }]}>
           <View style={{
-            width: '98%',
+            width: '100%',
             maxWidth: 380,
             borderRadius: 24,
             backgroundColor: '#10160c',
@@ -4951,7 +4953,7 @@ export default function HomeScreen() {
               <ThemedText style={{ fontSize: 13, lineHeight: 20, color: 'rgb(184, 178, 142)', textAlign: 'center', fontWeight: '400', marginBottom: 8 }}>
                 {t('premium_modal.desc2')}
               </ThemedText>
-              <ThemedText style={{ fontSize: 13.5, lineHeight: 20, color: 'rgb(184, 178, 142)', fontWeight: '600', textAlign: 'center' }}>
+              <ThemedText style={{ fontSize: 13, lineHeight: 20, color: 'rgb(184, 178, 142)', fontWeight: '600', textAlign: 'center' }}>
                 {t('premium_modal.desc3')}
               </ThemedText>
             </View>
@@ -4998,7 +5000,7 @@ export default function HomeScreen() {
                 }}
                 onPress={handlePurchasePremium}
               >
-                <ThemedText style={{ fontSize: 13.5, fontWeight: '700', color: '#FFFFFF' }}>
+                <ThemedText style={{ fontSize: 13, fontWeight: '700', color: '#FFFFFF' }}>
                   {t('premium_modal.unlock_btn')}
                 </ThemedText>
               </Pressable>
