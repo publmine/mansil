@@ -16,20 +16,25 @@ import { IDiaryRepository } from '@/repositories/interfaces/IDiaryRepository';
 import { IGardenRepository } from '@/repositories/interfaces/IGardenRepository';
 import { IPotRepository } from '@/repositories/interfaces/IPotRepository';
 
-const getRandomFlowerMessage = (color: string): string => {
+const getRandomFlowerMessage = (color: string, shownMessages: string[] = []): string => {
   const messages = getTherapeuticMessages();
-  const pool = (messages as any)[color] || messages;
-  if (!pool || !pool.openers || !pool.middles) {
-    return isEn()
-      ? 'The flower in bloom today holds your own unique beauty.'
-      : '오늘 피어난 꽃은 당신만의 아름다움을 품고 있습니다.';
+  const pool = (messages as any)[color] || (messages as any)['green'] || [];
+  if (Array.isArray(pool) && pool.length > 0) {
+    const unshown = pool.filter((msg: string) => !shownMessages.includes(msg));
+    const availablePool = unshown.length > 0 ? unshown : pool;
+    return availablePool[Math.floor(Math.random() * availablePool.length)];
   }
-  const opener = pool.openers[Math.floor(Math.random() * pool.openers.length)];
-  const middle = pool.middles[Math.floor(Math.random() * pool.middles.length)];
-  const ending = pool.endings && pool.endings.length > 0
-    ? pool.endings[Math.floor(Math.random() * pool.endings.length)]
-    : '';
-  return ending ? `${opener} ${middle} ${ending}` : `${opener} ${middle}`;
+  if (pool && pool.openers && pool.middles) {
+    const opener = pool.openers[Math.floor(Math.random() * pool.openers.length)];
+    const middle = pool.middles[Math.floor(Math.random() * pool.middles.length)];
+    const ending = pool.endings && pool.endings.length > 0
+      ? pool.endings[Math.floor(Math.random() * pool.endings.length)]
+      : '';
+    return ending ? `${opener} ${middle} ${ending}` : `${opener} ${middle}`;
+  }
+  return isEn()
+    ? 'The flower in bloom today holds your own unique beauty.'
+    : '오늘 피어난 꽃은 당신만의 아름다움을 품고 있습니다.';
 };
 
 export class GameService {
@@ -173,15 +178,22 @@ export class GameService {
       return step.message || '';
     };
 
+    let newShownMessages = [...(state.shownMessages || [])];
+
     const STEP_DESC_MAP: { [key: number]: string } = {
       1: pickMessage(stepDetailsObj?.[1] || stepDetailsObj?.['1'], currentMsgIdx),
       2: pickMessage(stepDetailsObj?.[2] || stepDetailsObj?.['2'], currentMsgIdx),
       3: pickMessage(stepDetailsObj?.[3] || stepDetailsObj?.['3'], currentMsgIdx),
       4: pickMessage(stepDetailsObj?.[4] || stepDetailsObj?.['4'], currentMsgIdx),
-      5: getRandomFlowerMessage(dominantType)
+      5: getRandomFlowerMessage(dominantType, newShownMessages)
     };
 
     let finalDesc = STEP_DESC_MAP[nextLevel] || targetPot.desc;
+
+    if (nextLevel === 5 && !newShownMessages.includes(finalDesc)) {
+      newShownMessages.push(finalDesc);
+      await this.gardenRepo.saveGardenState({ shownMessages: newShownMessages });
+    }
 
     if (nextLevel === 1) {
       const plantNames = getPlantNames();
@@ -290,7 +302,8 @@ export class GameService {
     const newState: GameState = {
       ...state,
       pots: finalPots,
-      archive: newArchive
+      archive: newArchive,
+      shownMessages: newShownMessages
     };
 
     return { newState, resultType: 'mind-card' };

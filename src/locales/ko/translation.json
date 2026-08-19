@@ -132,11 +132,11 @@
     "privacy_policy": "개인정보처리방침"
   },
   "growth_stages": {
-    "stage_0": "씨앗",
-    "stage_1": "새싹",
-    "stage_2": "꽃봉오리",
-    "stage_3": "개화 직전",
-    "stage_4": "만개 직전",
-    "stage_5": "완전한 개화"
+    "stage_0": "기다림",
+    "stage_1": "씨앗",
+    "stage_2": "새싹",
+    "stage_3": "첫 잎",
+    "stage_4": "꽃망울",
+    "stage_5": "온전한 개화"
   }
 }

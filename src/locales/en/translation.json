@@ -132,11 +132,11 @@
     "privacy_policy": "Privacy Policy"
   },
   "growth_stages": {
-    "stage_0": "Seed",
-    "stage_1": "Sprout",
-    "stage_2": "Bud",
-    "stage_3": "Almost Blooming",
-    "stage_4": "Near Full Bloom",
+    "stage_0": "Waiting",
+    "stage_1": "Seed",
+    "stage_2": "Sprout",
+    "stage_3": "First Leaves",
+    "stage_4": "Bud",
     "stage_5": "Full Bloom"
   }
 }
