@@ -137,15 +137,15 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
         // 기기 변경 / 재설치 시에도 구글 계정에 구매 이력이 있으면 자동 언락됩니다.
         // ==========================================
         await initPurchaseService();
-        if (!fullState.isPremiumUnlocked) {
-          try {
-            const hasPurchased = await checkHasPurchased();
-            if (hasPurchased) {
-              fullState = await service.unlockPremiumGarden(fullState);
-            }
-          } catch (restoreErr) {
-            console.warn('Silent restore failed:', restoreErr);
+        try {
+          const hasPurchased = await checkHasPurchased();
+          if (hasPurchased && !fullState.isPremiumUnlocked) {
+            fullState = await service.unlockPremiumGarden(fullState);
+          } else if (!hasPurchased && fullState.isPremiumUnlocked) {
+            fullState = await service.lockPremiumGarden(fullState);
           }
+        } catch (restoreErr) {
+          console.warn('Silent sync failed:', restoreErr);
         }
 
         if (isMounted) {

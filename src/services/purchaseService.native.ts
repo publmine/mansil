@@ -69,8 +69,10 @@ export async function restorePurchases(): Promise<{ success: boolean; hasPurchas
 
     const hasPurchases =
       customerInfo.entitlements.active[IAP_ENTITLEMENT_ID] !== undefined ||
+      customerInfo.entitlements.active['premium'] !== undefined ||
       customerInfo.entitlements.active[IAP_PRODUCT_ID] !== undefined ||
-      customerInfo.allPurchasedProductIdentifiers.includes(IAP_PRODUCT_ID);
+      customerInfo.allPurchasedProductIdentifiers.includes(IAP_PRODUCT_ID) ||
+      (customerInfo.nonSubscriptionTransactions && customerInfo.nonSubscriptionTransactions.some((t: any) => t.productIdentifier === IAP_PRODUCT_ID));
 
     return { success: true, hasPurchases };
   } catch (error: any) {
