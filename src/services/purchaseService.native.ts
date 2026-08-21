@@ -117,12 +117,29 @@ export function addCustomerInfoUpdateListener(callback: (hasPurchased: boolean) 
 export async function purchaseSeedDonation(): Promise<{ success: boolean; userCancelled?: boolean; error?: string }> {
   try {
     let purchaseResult;
-    // 1. Google Play Store 상품 정보 조회 후 결제 시도
-    const products = await Purchases.getProducts([SEED_DONATION_PRODUCT_ID]);
-    if (products && products.length > 0) {
-      purchaseResult = await Purchases.purchaseStoreProduct(products[0]);
-    } else {
-      purchaseResult = await Purchases.purchaseProduct(SEED_DONATION_PRODUCT_ID);
+
+    // 1. RevenueCat Offerings에서 패키지 조회 시도 (가장 안정적)
+    try {
+      const offerings = await Purchases.getOfferings();
+      const seedPackage = offerings.current?.availablePackages.find(
+        p => p.product.identifier === SEED_DONATION_PRODUCT_ID
+      );
+      if (seedPackage) {
+        purchaseResult = await Purchases.purchasePackage(seedPackage);
+      }
+    } catch {
+      // Continue to fallback
+    }
+
+    if (!purchaseResult) {
+      // 2. Google Play Store 상품 정보 직접 조회 후 결제 ('inapp' 타입 명시)
+      const products = await Purchases.getProducts([SEED_DONATION_PRODUCT_ID], 'inapp' as any);
+      if (products && products.length > 0) {
+        purchaseResult = await Purchases.purchaseStoreProduct(products[0]);
+      } else {
+        // 3. Fallback: 상품 ID 직접 결제 ('inapp' 타입 명시)
+        purchaseResult = await Purchases.purchaseProduct(SEED_DONATION_PRODUCT_ID, undefined, 'inapp' as any);
+      }
     }
 
     return { success: !!purchaseResult };
@@ -137,12 +154,34 @@ export async function purchaseSeedDonation(): Promise<{ success: boolean; userCa
 
 export async function getProductPrices(): Promise<{ premiumPrice?: string; seedPrice?: string }> {
   try {
-    const products = await Purchases.getProducts([IAP_PRODUCT_ID, SEED_DONATION_PRODUCT_ID]);
-    const premiumProd = products.find(p => p.identifier === IAP_PRODUCT_ID);
-    const seedProd = products.find(p => p.identifier === SEED_DONATION_PRODUCT_ID);
+    let premiumPrice: string | undefined;
+    let seedPrice: string | undefined;
+
+    // 1. Offerings에서 가격 조회 시도
+    try {
+      const offerings = await Purchases.getOfferings();
+      if (offerings.current?.availablePackages) {
+        const premPkg = offerings.current.availablePackages.find(p => p.product.identifier === IAP_PRODUCT_ID);
+        const seedPkg = offerings.current.availablePackages.find(p => p.product.identifier === SEED_DONATION_PRODUCT_ID);
+        if (premPkg) premiumPrice = premPkg.product.priceString;
+        if (seedPkg) seedPrice = seedPkg.product.priceString;
+      }
+    } catch {
+      // Continue to direct getProducts
+    }
+
+    // 2. getProducts로 보완 조회
+    if (!premiumPrice || !seedPrice) {
+      const products = await Purchases.getProducts([IAP_PRODUCT_ID, SEED_DONATION_PRODUCT_ID], 'inapp' as any);
+      const premiumProd = products.find(p => p.identifier === IAP_PRODUCT_ID);
+      const seedProd = products.find(p => p.identifier === SEED_DONATION_PRODUCT_ID);
+      if (premiumProd && !premiumPrice) premiumPrice = premiumProd.priceString;
+      if (seedProd && !seedPrice) seedPrice = seedProd.priceString;
+    }
+
     return {
-      premiumPrice: premiumProd?.priceString,
-      seedPrice: seedProd?.priceString,
+      premiumPrice,
+      seedPrice,
     };
   } catch (error) {
     console.warn('[IAP] Failed to fetch product prices:', error);
