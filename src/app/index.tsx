@@ -2118,6 +2118,21 @@ export default function HomeScreen() {
   // ==========================================
   // [IN-APP PURCHASE] 구글 플레이 인앱 결제 API 연동부 (상품: mansil_premium_season1)
   // ==========================================
+  const getIAPErrorMessage = (rawError?: string, defaultKey: string = 'iap.purchase_error') => {
+    if (!rawError) return t(defaultKey);
+    const lower = rawError.toLowerCase();
+    if (lower.includes('pending') || lower.includes('hold') || lower.includes('payment_pending') || lower.includes('deferred')) {
+      return t('iap.pending_notice');
+    }
+    if (lower.includes('already') || lower.includes('product_already_purchased') || lower.includes('item_already_owned')) {
+      return t('iap.already_purchased_notice');
+    }
+    if (lower.includes('network') || lower.includes('connection') || lower.includes('offline') || lower.includes('timeout')) {
+      return t('iap.network_notice');
+    }
+    return t(defaultKey);
+  };
+
   const handlePurchasePremium = async () => {
     try {
       const result = await purchasePremiumSeason();
@@ -2128,11 +2143,11 @@ export default function HomeScreen() {
         playSoundEffect(523.25, 'sine', 1.0);
         showToast(t('premium_modal.restore_success'));
       } else if (!result.userCancelled) {
-        showModal(t('common.error'), result.error || '결제 처리 중 오류가 발생했습니다.');
+        showModal(t('common.notice'), getIAPErrorMessage(result.error, 'iap.purchase_error'));
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error('Purchase error:', error);
-      showModal(t('common.error'), '결제 처리 중 오류가 발생했습니다.');
+      showModal(t('common.notice'), getIAPErrorMessage(error?.message, 'iap.purchase_error'));
     }
   };
 
@@ -2147,11 +2162,11 @@ export default function HomeScreen() {
       } else if (result.success) {
         showModal(t('common.notice'), t('premium_modal.restore_empty'));
       } else {
-        showModal(t('common.error'), result.error || '구매 내역 복원 중 오류가 발생했습니다.');
+        showModal(t('common.notice'), getIAPErrorMessage(result.error, 'iap.restore_error'));
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error('Restore error:', error);
-      showModal(t('common.error'), '구매 내역 복원 중 오류가 발생했습니다.');
+      showModal(t('common.notice'), getIAPErrorMessage(error?.message, 'iap.restore_error'));
     }
   };
 
@@ -2166,11 +2181,11 @@ export default function HomeScreen() {
         triggerHaptic('success');
         playSoundEffect(523.25, 'sine', 0.8);
       } else if (!result.userCancelled) {
-        showModal(t('common.error'), result.error || '결제 처리 중 오류가 발생했습니다.');
+        showModal(t('common.notice'), getIAPErrorMessage(result.error, 'iap.purchase_error'));
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error('Seed donation error:', error);
-      showModal(t('common.error'), '결제 처리 중 오류가 발생했습니다.');
+      showModal(t('common.notice'), getIAPErrorMessage(error?.message, 'iap.purchase_error'));
     } finally {
       setIsSeedPurchasing(false);
     }

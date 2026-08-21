@@ -173,5 +173,12 @@
     "desc2": "If you delete the app or switch devices, your journals and flower collection may not be recoverable.",
     "desc3": "Purchased content can always be restored through Google Play at no additional cost.",
     "start_btn": "Start Growing"
+  },
+  "iap": {
+    "pending_notice": "Your payment is currently pending.\nPlease try again in a moment once Google Play finishes processing.",
+    "already_purchased_notice": "This item is already purchased.\nPlease use Restore Purchases.",
+    "network_notice": "Network connection is unstable.\nPlease check your connection and try again.",
+    "purchase_error": "A problem occurred while processing the purchase.\nPlease try again later.",
+    "restore_error": "A problem occurred while restoring purchases.\nPlease try again later."
   }
 }
