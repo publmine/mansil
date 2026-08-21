@@ -50,6 +50,7 @@ interface GameContextType {
   startThirdGarden: () => Promise<void>;
   startFourthGarden: () => Promise<void>;
   unlockPremiumGarden: () => Promise<void>;
+  lockPremiumGarden: () => Promise<void>;
   writeDiary: (potId: number, level: number, question: string, content: string) => void;
 }
 
@@ -378,6 +379,16 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   };
 
+  const lockPremiumGarden = async () => {
+    if (!gameService) return;
+    try {
+      const newState = await gameService.lockPremiumGarden(state);
+      setState(newState);
+    } catch (e) {
+      console.error('Failed to lock premium garden:', e);
+    }
+  };
+
   return (
     <GameContext.Provider
       value={{
@@ -403,6 +414,7 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
         startThirdGarden,
         startFourthGarden,
         unlockPremiumGarden,
+        lockPremiumGarden,
         writeDiary,
       }}
     >

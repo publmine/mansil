@@ -34,3 +34,7 @@ export async function getProductPrices(): Promise<{ premiumPrice?: string; seedP
 export async function checkHasPurchased(): Promise<boolean> {
   return false;
 }
+
+export function addCustomerInfoUpdateListener(_callback: (hasPurchased: boolean) => void): () => void {
+  return () => {};
+}

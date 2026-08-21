@@ -85,13 +85,31 @@ export async function checkHasPurchased(): Promise<boolean> {
 
     return (
       customerInfo.entitlements.active[IAP_ENTITLEMENT_ID] !== undefined ||
+      customerInfo.entitlements.active['premium'] !== undefined ||
       customerInfo.entitlements.active[IAP_PRODUCT_ID] !== undefined ||
-      customerInfo.allPurchasedProductIdentifiers.includes(IAP_PRODUCT_ID)
+      customerInfo.allPurchasedProductIdentifiers.includes(IAP_PRODUCT_ID) ||
+      (customerInfo.nonSubscriptionTransactions && customerInfo.nonSubscriptionTransactions.some((t: any) => t.productIdentifier === IAP_PRODUCT_ID))
     );
   } catch (error) {
     console.warn('[IAP] Silent check error:', error);
     return false;
   }
+}
+
+export function addCustomerInfoUpdateListener(callback: (hasPurchased: boolean) => void): () => void {
+  const listener = (customerInfo: any) => {
+    const hasPurchased =
+      customerInfo.entitlements.active[IAP_ENTITLEMENT_ID] !== undefined ||
+      customerInfo.entitlements.active['premium'] !== undefined ||
+      customerInfo.entitlements.active[IAP_PRODUCT_ID] !== undefined ||
+      customerInfo.allPurchasedProductIdentifiers.includes(IAP_PRODUCT_ID) ||
+      (customerInfo.nonSubscriptionTransactions && customerInfo.nonSubscriptionTransactions.some((t: any) => t.productIdentifier === IAP_PRODUCT_ID));
+    callback(hasPurchased);
+  };
+  Purchases.addCustomerInfoUpdateListener(listener);
+  return () => {
+    Purchases.removeCustomerInfoUpdateListener(listener);
+  };
 }
 
 export async function purchaseSeedDonation(): Promise<{ success: boolean; userCancelled?: boolean; error?: string }> {

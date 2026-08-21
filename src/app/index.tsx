@@ -32,7 +32,7 @@ import { HealingColor, STEP_DETAILS_JSON, getHealingColors, getStepDetailsForSea
 import { MaxContentWidth, Spacing } from '@/constants/theme';
 import { ArchivedPlant, DiaryEntry, useGame } from '@/context/GameContext';
 import { playSoundEffect, triggerHaptic } from '@/services/feedback';
-import { getProductPrices, purchasePremiumSeason, purchaseSeedDonation, restorePurchases } from '@/services/purchaseService';
+import { addCustomerInfoUpdateListener, checkHasPurchased, getProductPrices, purchasePremiumSeason, purchaseSeedDonation, restorePurchases } from '@/services/purchaseService';
 import { styles } from '@/styles/index.styles';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as Sharing from 'expo-sharing';
@@ -2043,10 +2043,48 @@ export default function HomeScreen() {
     startThirdGarden,
     startFourthGarden,
     unlockPremiumGarden,
+    lockPremiumGarden,
     writeDiary
   } = useGame();
 
   const [isPremiumModalOpen, setIsPremiumModalOpen] = useState(false);
+
+  // ---- 실시간 인앱 결제/환불 상태 동기화 (앱 실행 시 및 백엔드 변경 시) ----
+  useEffect(() => {
+    if (!isLoaded) return;
+
+    let isMounted = true;
+
+    // 1. 앱 시작 시 구글 서버와 무음(Silent) 대조 (환불 시 즉시 권한 회수)
+    checkHasPurchased()
+      .then(hasPurchased => {
+        if (!isMounted) return;
+        if (hasPurchased && !state.isPremiumUnlocked) {
+          unlockPremiumGarden();
+        } else if (!hasPurchased && state.isPremiumUnlocked) {
+          // 환불되었거나 구매 내역이 없으면 즉시 잠금 상태로 전환
+          lockPremiumGarden();
+        }
+      })
+      .catch(err => {
+        console.warn('[IAP] Silent sync check error:', err);
+      });
+
+    // 2. 구글 플레이 / RevenueCat 실시간 환불/구매 이벤트 리스너 등록
+    const removeListener = addCustomerInfoUpdateListener(hasPurchased => {
+      if (!isMounted) return;
+      if (hasPurchased && !state.isPremiumUnlocked) {
+        unlockPremiumGarden();
+      } else if (!hasPurchased && state.isPremiumUnlocked) {
+        lockPremiumGarden();
+      }
+    });
+
+    return () => {
+      isMounted = false;
+      removeListener();
+    };
+  }, [isLoaded, state.isPremiumUnlocked]);
 
   // ---- 최초 1회 오프라인 안내 온보딩 모달 ----
   const [showOnboardingNotice, setShowOnboardingNotice] = useState(false);

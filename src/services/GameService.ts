@@ -407,4 +407,12 @@ export class GameService {
       pots: updatedPots
     };
   }
+
+  async lockPremiumGarden(state: GameState): Promise<GameState> {
+    await this.gardenRepo.saveGardenState({ isPremiumUnlocked: false });
+    return {
+      ...state,
+      isPremiumUnlocked: false
+    };
+  }
 }
