@@ -1,5 +1,5 @@
-import { Dimensions, Platform, StyleSheet } from 'react-native';
 import { Fonts, MaxContentWidth, Spacing } from '@/constants/theme';
+import { Dimensions, Platform, StyleSheet } from 'react-native';
 
 const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
 const WHEEL_SIZE = Math.min(360, SCREEN_WIDTH * 0.95);
@@ -63,6 +63,7 @@ export const styles = StyleSheet.create({
     justifyContent: 'space-between',
     alignItems: 'center',
     marginTop: Spacing.one,
+    paddingHorizontal: 0,
   },
   mainTitle: {
     fontSize: 18,
@@ -88,8 +89,9 @@ export const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: '#4b5633',
     borderRadius: Spacing.two,
-    paddingHorizontal: Spacing.three,
+    paddingHorizontal: 12,
     paddingVertical: Spacing.two,
+    flexShrink: 0,
   },
   bookButtonText: {
     fontSize: 11,
@@ -247,13 +249,14 @@ export const styles = StyleSheet.create({
   },
   plantNameText: {
     fontSize: 13,
-    lineHeight: 20,
+    lineHeight: 17,
     fontWeight: '600',
     color: '#ffffea',
     textAlign: 'center',
     marginVertical: 4,
     fontFamily: 'BookkMyungjo_Bold',
-    letterSpacing: -0.4
+    letterSpacing: -0.4,
+    paddingHorizontal: 8,
   },
   plantGrowthStageText: {
     fontSize: 12,
@@ -727,6 +730,7 @@ export const styles = StyleSheet.create({
   cardPlantTag: {
     flexDirection: 'row',
     alignItems: 'center',
+    justifyContent: 'center',
     backgroundColor: '#0c130a',
     borderWidth: 1,
     borderColor: '#4b5633',
@@ -734,6 +738,7 @@ export const styles = StyleSheet.create({
     paddingHorizontal: Spacing.three,
     paddingVertical: Spacing.one + 1,
     marginBottom: 10,
+    alignSelf: 'center',
   },
   cardPlantTagLv5: {
     backgroundColor: 'rgba(0, 0, 0, 0.2)',
@@ -744,6 +749,8 @@ export const styles = StyleSheet.create({
   cardPlantTagText: {
     fontSize: 11,
     color: '#ddefb7',
+    textAlign: 'center',
+    lineHeight: 16
   },
   cardPlantTagTextLv5: {
     textShadowColor: 'rgba(0, 0, 0, 0.6)',

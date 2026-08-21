@@ -123,7 +123,7 @@
     "share_not_supported": "Sharing is not supported on this device.",
     "design_area_not_found": "Mandala design area not found.",
     "design_downloaded": "Mandala design downloaded successfully!",
-    "share_flower": "Share Today's Flower",
+    "share_flower": "Share \nToday's Flower",
     "onsil_story": "Onsil Stories"
   },
   "settings": {
@@ -132,7 +132,16 @@
     "app_info": "App Information",
     "app_info_title": "App Information",
     "app_info_desc": "Mandala Onsil is an offline healing app that safely keeps your data on your device without requiring an account.\n\nIf you delete the app or switch devices, your journals and flower collection may not be recoverable.\n\nPurchased content can always be restored through Google Play at no additional cost.",
-    "privacy_policy": "Privacy Policy"
+    "privacy_policy": "Privacy Policy",
+    "seed_support": "Planting for Next Season"
+  },
+  "seed_modal": {
+    "title": "Planting for Next Season",
+    "desc": "Plant a small seed to help new mandalas and healing content grow.",
+    "cancel": "Maybe Later",
+    "confirm": "Plant a Seed {{price}}",
+    "thank_title": "A Seed Has Been Planted.",
+    "thank_desc": "Your warm support gives us the strength to create\nnew mandalas and healing content.\n\nThank you deeply."
   },
   "growth_stages": {
     "stage_0": "Waiting",
@@ -148,7 +157,7 @@
     "desc2": "Many more flowers and stories are waiting to unfold in your greenhouse.",
     "desc3": "Keep nurturing your greenhouse.",
     "cancel": "Maybe Later",
-    "unlock_btn": "Continue Greenhouse $1.99",
+    "unlock_btn": "Continue Greenhouse {{price}}",
     "benefit_notice": "Access all available flowers and stories",
     "restore": "Restore Purchases",
     "restore_success": "Purchases have been successfully restored.",
@@ -156,7 +165,7 @@
   },
   "premium_banner": {
     "text": "Unlock all flowers and stories in the greenhouse",
-    "btn": "Continue Greenhouse $1.99",
+    "btn": "Continue Greenhouse {{price}}",
     "next_flower_waiting": "The next flower is waiting."
   },
   "onboarding_notice": {

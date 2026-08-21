@@ -17,6 +17,7 @@ import { AsyncStorageGardenRepository } from '@/repositories/asyncstorage/AsyncS
 import { AsyncStoragePotRepository } from '@/repositories/asyncstorage/AsyncStoragePotRepository';
 import { playSoundEffect, triggerHaptic } from '@/services/feedback';
 import { GameService } from '@/services/GameService';
+import { checkHasPurchased, initPurchaseService } from '@/services/purchaseService';
 import React, { createContext, useContext, useEffect, useState } from 'react';
 import { Platform } from 'react-native';
 
@@ -131,16 +132,16 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
         }
 
         // ==========================================
-        // [IN-APP PURCHASE] 앱 실행 시 구글 구매 내역 백그라운드 자동 복원
+        // [IN-APP PURCHASE] IAP 모듈 초기화 및 백그라운드 자동 복원
         // 기기 변경 / 재설치 시에도 구글 계정에 구매 이력이 있으면 자동 언락됩니다.
         // ==========================================
+        await initPurchaseService();
         if (!fullState.isPremiumUnlocked) {
           try {
-            // TODO: 결제 라이브러리 연동 시 활성화 (예: RevenueCat)
-            // const customerInfo = await Purchases.getCustomerInfo();
-            // if (customerInfo.entitlements.active['premium']) {
-            //   fullState = await service.unlockPremiumGarden(fullState);
-            // }
+            const hasPurchased = await checkHasPurchased();
+            if (hasPurchased) {
+              fullState = await service.unlockPremiumGarden(fullState);
+            }
           } catch (restoreErr) {
             console.warn('Silent restore failed:', restoreErr);
           }

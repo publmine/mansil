@@ -26,7 +26,13 @@ export class AsyncStorageGardenRepository implements IGardenRepository {
     await AsyncStorage.setItem(GARDEN_KEY, JSON.stringify(updated));
   }
 
-  async resetGardenState(): Promise<void> {
-    await AsyncStorage.removeItem(GARDEN_KEY);
+  async resetGardenState(preservePremium: boolean = false): Promise<void> {
+    const current = await this.getGardenState();
+    const isPremium = preservePremium && current.isPremiumUnlocked;
+    if (isPremium) {
+      await AsyncStorage.setItem(GARDEN_KEY, JSON.stringify({ score: 250, currentPotIndex: 0, shownMessages: [], usedTemplateIds: [], isPremiumUnlocked: true }));
+    } else {
+      await AsyncStorage.removeItem(GARDEN_KEY);
+    }
   }
 }

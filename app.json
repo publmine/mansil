@@ -1,7 +1,10 @@
 {
   "expo": {
-    "name": "만다라 온실",
+    "name": "Mandala Onsil",
     "slug": "mandalaonsil",
+    "locales": {
+      "ko": "./locales/ko.json"
+    },
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
@@ -18,7 +21,7 @@
         "foregroundImage": "./assets/images/icon.png"
       },
       "predictiveBackGestureEnabled": false,
-      "package": "com.mandalaonsil.app"
+      "package": "com.mansil.mandalaonsil"
     },
     "web": {
       "output": "static",

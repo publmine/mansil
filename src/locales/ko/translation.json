@@ -132,7 +132,16 @@
     "app_info": "서비스 정보",
     "app_info_title": "서비스 이용 안내",
     "app_info_desc": "본 앱은 별도의 회원가입 없이 기기 내부에 데이터를 안전하게 저장하는 오프라인 힐링 앱입니다.\n\n앱을 삭제하거나 기기를 변경할 경우 작성한 일기와 꽃 도감 데이터는 초기화될 수 있습니다.\n\n구매한 콘텐츠는 Google Play 구매 내역을 통해 언제든지 무료로 복원할 수 있습니다.",
-    "privacy_policy": "개인정보처리방침"
+    "privacy_policy": "개인정보처리방침",
+    "seed_support": "다음 시즌을 위한 파종"
+  },
+  "seed_modal": {
+    "title": "다음 시즌을 위한 파종",
+    "desc": "새로운 만다라와 치유 콘텐츠가 자라날 수 있도록\n작은 씨앗을 심어주세요.",
+    "cancel": "나중에",
+    "confirm": "파종하기 {{price}}",
+    "thank_title": "씨앗이 파종되었습니다.",
+    "thank_desc": "보내주신 응원은 새로운 만다라와\n치유 콘텐츠를 만드는 힘이 됩니다.\n\n감사합니다."
   },
   "growth_stages": {
     "stage_0": "기다림",
@@ -148,7 +157,7 @@
     "desc2": "온실에는 아직 많은 꽃과 이야기들이 \n기다리고 있습니다.",
     "desc3": "당신만의 온실을 계속 가꾸어 보세요.",
     "cancel": "나중에 하기",
-    "unlock_btn": "온실 계속 가꾸기 ₩2,000",
+    "unlock_btn": "온실 계속 가꾸기 {{price}}",
     "benefit_notice": "현재 제공되는 모든 꽃과 이야기 이용",
     "restore": "구매 내역 복원",
     "restore_success": "구매 내역이 정상적으로 복원되었습니다.",
@@ -156,7 +165,7 @@
   },
   "premium_banner": {
     "text": "온실의 모든 꽃과 이야기 열기",
-    "btn": "온실 계속 가꾸기 ₩2,000",
+    "btn": "온실 계속 가꾸기 {{price}}",
     "next_flower_waiting": "다음 꽃이 기다리고 있습니다."
   },
   "onboarding_notice": {

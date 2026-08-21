@@ -52,11 +52,17 @@ export class SQLiteGardenRepository implements IGardenRepository {
     );
   }
 
-  async resetGardenState(): Promise<void> {
+  async resetGardenState(preservePremium: boolean = false): Promise<void> {
     await this.ensureColumn();
+    let isPremium = 0;
+    if (preservePremium) {
+      const current = await this.getGardenState();
+      if (current.isPremiumUnlocked) isPremium = 1;
+    }
     await this.db.runAsync(
       `INSERT OR REPLACE INTO game_state (id, score, current_pot_index, shown_messages, used_template_ids, is_premium_unlocked)
-       VALUES (1, 250, 0, '[]', '[]', 0)`
+       VALUES (1, 250, 0, '[]', '[]', ?)`,
+      [isPremium]
     );
   }
 }

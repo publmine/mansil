@@ -343,9 +343,12 @@ export class GameService {
   }
 
   async resetGame(): Promise<GameState> {
+    const currentGarden = await this.gardenRepo.getGardenState();
+    const wasPremiumUnlocked = !!currentGarden.isPremiumUnlocked;
+
     await this.potRepo.clearAllPotsAndArchive();
     await this.diaryRepo.clearAllDiaries();
-    await this.gardenRepo.resetGardenState();
+    await this.gardenRepo.resetGardenState(wasPremiumUnlocked);
     await this.creatureRepo.resetCreatures();
 
     const initialPots = initialPotsSeed();

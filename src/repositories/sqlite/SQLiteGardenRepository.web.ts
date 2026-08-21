@@ -30,10 +30,16 @@ export class SQLiteGardenRepository implements IGardenRepository {
     }
   }
 
-  async resetGardenState(): Promise<void> {
+  async resetGardenState(preservePremium: boolean = false): Promise<void> {
     try {
       if (typeof localStorage !== 'undefined') {
-        localStorage.removeItem(GARDEN_KEY);
+        const current = await this.getGardenState();
+        const isPremium = preservePremium && current.isPremiumUnlocked;
+        if (isPremium) {
+          localStorage.setItem(GARDEN_KEY, JSON.stringify({ score: 250, currentPotIndex: 0, shownMessages: [], usedTemplateIds: [], isPremiumUnlocked: true }));
+        } else {
+          localStorage.removeItem(GARDEN_KEY);
+        }
       }
     } catch (e) {
       console.warn('resetGardenState web error:', e);

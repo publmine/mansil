@@ -12,7 +12,7 @@ import {
   TextInput,
   View
 } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import Animated, {
   Easing,
@@ -32,6 +32,7 @@ import { HealingColor, STEP_DETAILS_JSON, getHealingColors, getStepDetailsForSea
 import { MaxContentWidth, Spacing } from '@/constants/theme';
 import { ArchivedPlant, DiaryEntry, useGame } from '@/context/GameContext';
 import { playSoundEffect, triggerHaptic } from '@/services/feedback';
+import { getProductPrices, purchasePremiumSeason, purchaseSeedDonation, restorePurchases } from '@/services/purchaseService';
 import { styles } from '@/styles/index.styles';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as Sharing from 'expo-sharing';
@@ -2017,6 +2018,7 @@ const getSkyColors = (completedCount: number): { top: string; bottom: string } =
 };
 
 export default function HomeScreen() {
+  const insets = useSafeAreaInsets();
   const { t } = useTranslation();
   const {
     state,
@@ -2076,17 +2078,20 @@ export default function HomeScreen() {
   };
 
   // ==========================================
-  // [IN-APP PURCHASE] 구글 플레이 인앱 결제 API 연동부
-  // 추후 react-native-iap 또는 RevenueCat 연동 시 아래 핸들러에 연결하세요.
+  // [IN-APP PURCHASE] 구글 플레이 인앱 결제 API 연동부 (상품: mansil_premium_season1)
   // ==========================================
   const handlePurchasePremium = async () => {
     try {
-      // TODO: 실제 결제 API 호출 (예: await Purchases.purchasePackage(package))
-      await unlockPremiumGarden();
-      setIsPremiumModalOpen(false);
-      triggerHaptic('success');
-      playSoundEffect(523.25, 'sine', 1.0);
-      showToast(t('premium_modal.restore_success'));
+      const result = await purchasePremiumSeason();
+      if (result.success) {
+        await unlockPremiumGarden();
+        setIsPremiumModalOpen(false);
+        triggerHaptic('success');
+        playSoundEffect(523.25, 'sine', 1.0);
+        showToast(t('premium_modal.restore_success'));
+      } else if (!result.userCancelled) {
+        showModal(t('common.error'), result.error || '결제 처리 중 오류가 발생했습니다.');
+      }
     } catch (error) {
       console.error('Purchase error:', error);
       showModal(t('common.error'), '결제 처리 중 오류가 발생했습니다.');
@@ -2095,13 +2100,41 @@ export default function HomeScreen() {
 
   const handleRestorePurchases = async () => {
     try {
-      // TODO: 실제 구매 내역 복원 API 호출 (예: await Purchases.restorePurchases())
-      await unlockPremiumGarden();
-      setIsPremiumModalOpen(false);
-      showToast(t('premium_modal.restore_success'));
+      const result = await restorePurchases();
+      if (result.hasPurchases) {
+        await unlockPremiumGarden();
+        setIsPremiumModalOpen(false);
+        triggerHaptic('success');
+        showToast(t('premium_modal.restore_success'));
+      } else if (result.success) {
+        showModal(t('common.notice'), t('premium_modal.restore_empty'));
+      } else {
+        showModal(t('common.error'), result.error || '구매 내역 복원 중 오류가 발생했습니다.');
+      }
     } catch (error) {
       console.error('Restore error:', error);
       showModal(t('common.error'), '구매 내역 복원 중 오류가 발생했습니다.');
+    }
+  };
+
+  const handlePurchaseSeedDonation = async () => {
+    if (isSeedPurchasing) return;
+    setIsSeedPurchasing(true);
+    try {
+      const result = await purchaseSeedDonation();
+      if (result.success) {
+        setIsSeedModalOpen(false);
+        setIsSeedThankModalOpen(true);
+        triggerHaptic('success');
+        playSoundEffect(523.25, 'sine', 0.8);
+      } else if (!result.userCancelled) {
+        showModal(t('common.error'), result.error || '결제 처리 중 오류가 발생했습니다.');
+      }
+    } catch (error) {
+      console.error('Seed donation error:', error);
+      showModal(t('common.error'), '결제 처리 중 오류가 발생했습니다.');
+    } finally {
+      setIsSeedPurchasing(false);
     }
   };
 
@@ -2225,8 +2258,20 @@ export default function HomeScreen() {
   const [selectedPlantName, setSelectedPlantName] = useState('');
   const [selectedStepLevel, setSelectedStepLevel] = useState(0);
 
-  // Settings Modal State
+  // Settings & Seed Donation Modal State
   const [isSettingsModalOpen, setIsSettingsModalOpen] = useState(false);
+  const [isSeedModalOpen, setIsSeedModalOpen] = useState(false);
+  const [isSeedThankModalOpen, setIsSeedThankModalOpen] = useState(false);
+  const [isSeedPurchasing, setIsSeedPurchasing] = useState(false);
+  const [productPrices, setProductPrices] = useState<{ premiumPrice?: string; seedPrice?: string }>({});
+
+  useEffect(() => {
+    getProductPrices().then(prices => {
+      if (prices && (prices.premiumPrice || prices.seedPrice)) {
+        setProductPrices(prices);
+      }
+    }).catch(() => {});
+  }, []);
 
   const handleOpenDiaryWriteModal = (question: string) => {
     const currentLevel = activePot?.level || 1;
@@ -2693,11 +2738,11 @@ export default function HomeScreen() {
             />
             <View style={[styles.screenWrapper, { display: currentScreen === 'mansil' ? 'flex' : 'none' }]}>
               <View style={styles.titleArea}>
-                <View>
+                <View style={{ flex: 1, marginRight: 0, minWidth: 0 }}>
                   <ThemedText type="title" style={[styles.mainTitle, styles.neonEmeraldGlow]}>
                     {t('greenhouse.title')}
                   </ThemedText>
-                  <ThemedText type="small" style={styles.subtitleText}>
+                  <ThemedText type="small" style={[styles.subtitleText, isEn() && { fontSize: 11 }]}>
                     {t('greenhouse.subtitle')}
                   </ThemedText>
                 </View>
@@ -3125,9 +3170,9 @@ export default function HomeScreen() {
             <View style={[styles.screenWrapper, { justifyContent: 'flex-start', gap: 12, display: currentScreen === 'sanctuary' ? 'flex' : 'none' }]}>
               {/* Minimal header */}
               <View style={styles.titleArea}>
-                <View>
+                <View style={{ flex: 1, marginRight: 10, minWidth: 0 }}>
                   <ThemedText type="title" style={[styles.mainTitle, styles.neonEmeraldGlow]}>{t('sanctuary.title')}</ThemedText>
-                  <ThemedText type="small" style={styles.subtitleText}>{t('sanctuary.subtitle')}</ThemedText>
+                  <ThemedText type="small" style={[styles.subtitleText, isEn() && { fontSize: 11 }]}>{t('sanctuary.subtitle')}</ThemedText>
                 </View>
                 <Pressable style={styles.bookButton} onPress={() => navigateTo('archive')}>
                   <Image
@@ -4872,6 +4917,27 @@ export default function HomeScreen() {
                   <Path d="M10 14L21 3" />
                 </Svg>
               </Pressable>
+
+              {/* 다음 시즌을 위한 파종 */}
+              <Pressable
+                style={styles.settingsMenuItem}
+                onPress={() => {
+                  setIsSettingsModalOpen(false);
+                  setIsSeedModalOpen(true);
+                }}
+              >
+                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
+                  <Image
+                    source={require('../../assets/images/seed.png')}
+                    style={{ width: 20, height: 20 }}
+                    resizeMode="contain"
+                  />
+                  <ThemedText style={styles.settingsMenuText}>{t('settings.seed_support')}</ThemedText>
+                </View>
+                <Svg width={16} height={16} viewBox="0 0 24 24" fill="none" stroke="#9A9FB0" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
+                  <Path d="M9 18l6-6-6-6" />
+                </Svg>
+              </Pressable>
             </View>
 
             <Pressable
@@ -4879,6 +4945,200 @@ export default function HomeScreen() {
               onPress={() => setIsSettingsModalOpen(false)}
             >
               <ThemedText style={styles.modalOkText}>{t('common.close')}</ThemedText>
+            </Pressable>
+          </View>
+        </View>
+      </Modal>
+
+      {/* ------------------------------------------------------------- */}
+      {/* SEED DONATION / SUPPORT MODAL (다음 시즌을 위한 파종 모달) */}
+      {/* ------------------------------------------------------------- */}
+      <Modal
+        visible={isSeedModalOpen}
+        transparent={true}
+        animationType="fade"
+        onRequestClose={() => setIsSeedModalOpen(false)}
+      >
+        <View style={[styles.modalOverlay, { paddingHorizontal: 16 }]}>
+          <View style={{
+            width: '100%',
+            maxWidth: 360,
+            borderRadius: 24,
+            backgroundColor: '#10160c',
+            borderWidth: 1.5,
+            borderColor: '#758651',
+            paddingVertical: 24,
+            paddingHorizontal: 16,
+            shadowColor: '#758651',
+            shadowOffset: { width: 0, height: 4 },
+            shadowOpacity: 0.25,
+            shadowRadius: 16,
+            elevation: 10
+          }}>
+            {/* Header Icon / Badge */}
+            <View style={{ alignItems: 'center', marginBottom: 14 }}>
+              <View style={{
+                width: 54,
+                height: 54,
+                borderRadius: 27,
+                backgroundColor: 'rgba(35, 65, 42, 0.75)',
+                borderWidth: 1.5,
+                borderColor: 'rgba(168, 230, 207, 0.7)',
+                justifyContent: 'center',
+                alignItems: 'center',
+                marginBottom: 10,
+                shadowColor: '#A8E6CF',
+                shadowOffset: { width: 0, height: 0 },
+                shadowOpacity: 0.5,
+                shadowRadius: 12,
+              }}>
+                <Image
+                  source={require('../../assets/images/seed.png')}
+                  style={{ width: 28, height: 28 }}
+                  resizeMode="contain"
+                />
+              </View>
+              <ThemedText style={{ fontSize: 18, fontWeight: '700', color: '#F4FAF3', textAlign: 'center' }}>
+                {t('seed_modal.title')}
+              </ThemedText>
+            </View>
+
+            {/* Description */}
+            <View style={{
+              backgroundColor: 'rgba(255, 255, 255, 0.05)',
+              borderRadius: 16,
+              paddingVertical: 16,
+              paddingHorizontal: 14,
+              marginBottom: 18,
+              borderWidth: 1,
+              borderColor: 'rgba(255, 255, 255, 0.08)'
+            }}>
+              <ThemedText style={{
+                fontSize: 13.5,
+                color: '#ddefb7',
+                lineHeight: 22,
+                textAlign: 'center',
+                fontWeight: '500'
+              }}>
+                {t('seed_modal.desc')}
+              </ThemedText>
+            </View>
+
+            {/* Action Buttons */}
+            <View style={{ flexDirection: 'row', gap: 10 }}>
+              <Pressable
+                style={{
+                  flex: 1,
+                  paddingVertical: 13,
+                  borderRadius: 14,
+                  backgroundColor: 'rgba(255, 255, 255, 0.08)',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  borderWidth: 1,
+                  borderColor: 'rgba(255, 255, 255, 0.12)'
+                }}
+                onPress={() => setIsSeedModalOpen(false)}
+              >
+                <ThemedText style={{ fontSize: 13.5, fontWeight: '600', color: '#B0BEC5' }}>
+                  {t('seed_modal.cancel')}
+                </ThemedText>
+              </Pressable>
+
+              <Pressable
+                style={{
+                  flex: 1.5,
+                  paddingVertical: 13,
+                  borderRadius: 14,
+                  backgroundColor: '#2E5E28',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  borderWidth: 1.5,
+                  borderColor: '#81C784',
+                  shadowColor: '#81C784',
+                  shadowOffset: { width: 0, height: 3 },
+                  shadowOpacity: 0.35,
+                  shadowRadius: 8,
+                }}
+                disabled={isSeedPurchasing}
+                onPress={handlePurchaseSeedDonation}
+              >
+                <ThemedText style={[{ fontSize: 13, fontWeight: '700', color: '#FFFFFF' }, isEn() && { fontSize: 12 }]}>
+                  {isSeedPurchasing ? '...' : t('seed_modal.confirm', { price: productPrices.seedPrice || (isEn() ? '$1.99' : '₩2,000') })}
+                </ThemedText>
+              </Pressable>
+            </View>
+          </View>
+        </View>
+      </Modal>
+
+      {/* ------------------------------------------------------------- */}
+      {/* SEED DONATION THANK YOU MODAL (파종 감사 메시지 모달) */}
+      {/* ------------------------------------------------------------- */}
+      <Modal
+        visible={isSeedThankModalOpen}
+        transparent={true}
+        animationType="fade"
+        onRequestClose={() => setIsSeedThankModalOpen(false)}
+      >
+        <View style={[styles.modalOverlay, { paddingHorizontal: 16 }]}>
+          <View style={{
+            width: '100%',
+            maxWidth: 340,
+            borderRadius: 24,
+            backgroundColor: '#10160c',
+            borderWidth: 1.5,
+            borderColor: '#758651',
+            paddingVertical: 24,
+            paddingHorizontal: 20,
+            alignItems: 'center',
+            shadowColor: '#758651',
+            shadowOffset: { width: 0, height: 4 },
+            shadowOpacity: 0.25,
+            shadowRadius: 16,
+            elevation: 10
+          }}>
+            <View style={{
+              width: 56,
+              height: 56,
+              borderRadius: 28,
+              backgroundColor: 'rgba(35, 65, 42, 0.8)',
+              borderWidth: 1.5,
+              borderColor: 'rgba(168, 230, 207, 0.8)',
+              justifyContent: 'center',
+              alignItems: 'center',
+              marginBottom: 14,
+            }}>
+              <Image
+                source={require('../../assets/images/step1.png')}
+                style={{ width: 34, height: 34 }}
+                resizeMode="contain"
+              />
+            </View>
+
+            <ThemedText style={{ fontSize: 18, fontWeight: '700', color: '#F4FAF3', textAlign: 'center', marginBottom: 12 }}>
+              {t('seed_modal.thank_title')}
+            </ThemedText>
+
+            <ThemedText style={{ fontSize: 13.5, color: '#ddefb7', lineHeight: 22, textAlign: 'center', marginBottom: 20, fontWeight: '500' }}>
+              {t('seed_modal.thank_desc')}
+            </ThemedText>
+
+            <Pressable
+              style={{
+                width: '100%',
+                paddingVertical: 13,
+                borderRadius: 14,
+                backgroundColor: '#2E5E28',
+                alignItems: 'center',
+                justifyContent: 'center',
+                borderWidth: 1.5,
+                borderColor: '#81C784',
+              }}
+              onPress={() => setIsSeedThankModalOpen(false)}
+            >
+              <ThemedText style={{ fontSize: 14, fontWeight: '700', color: '#FFFFFF' }}>
+                {t('common.confirm')}
+              </ThemedText>
             </Pressable>
           </View>
         </View>
@@ -4978,7 +5238,7 @@ export default function HomeScreen() {
                 }}
                 onPress={() => setIsPremiumModalOpen(false)}
               >
-                <ThemedText style={{ fontSize: 13.5, fontWeight: '600', color: '#B0BEC5' }}>
+                <ThemedText style={[{ fontSize: 13.5, fontWeight: '600', color: '#B0BEC5' }, isEn() && { fontSize: 12 }]}>
                   {t('premium_modal.cancel')}
                 </ThemedText>
               </Pressable>
@@ -5000,8 +5260,8 @@ export default function HomeScreen() {
                 }}
                 onPress={handlePurchasePremium}
               >
-                <ThemedText style={{ fontSize: 13, fontWeight: '700', color: '#FFFFFF' }}>
-                  {t('premium_modal.unlock_btn')}
+                <ThemedText style={[{ fontSize: 13, fontWeight: '700', color: '#FFFFFF' }, isEn() && { fontSize: 12 }]}>
+                  {t('premium_modal.unlock_btn', { price: productPrices.premiumPrice || (isEn() ? '$1.99' : '₩2,000') })}
                 </ThemedText>
               </Pressable>
             </View>
@@ -5049,14 +5309,18 @@ export default function HomeScreen() {
             />
 
             {/* Inner Content Positioned at Bottom */}
-            <View style={{ paddingBottom: Platform.OS === 'ios' ? 44 : 28, paddingHorizontal: 20, paddingTop: 16 }}>
+            <View style={{
+              paddingBottom: Math.max(insets.bottom + 20, 52),
+              paddingHorizontal: 20,
+              paddingTop: 12
+            }}>
               {/* Golden Notice Text Box */}
               <View style={{
                 backgroundColor: 'rgba(16, 22, 12, 0.88)',
                 borderRadius: 18,
-                paddingVertical: 20,
+                paddingVertical: 16,
                 paddingHorizontal: 16,
-                marginBottom: 20,
+                marginBottom: 16,
                 borderWidth: 1.5,
                 borderColor: '#758651',
                 shadowColor: '#758651',
@@ -5064,13 +5328,13 @@ export default function HomeScreen() {
                 shadowOpacity: 0.35,
                 shadowRadius: 12,
               }}>
-                <ThemedText style={{ fontSize: 13.5, lineHeight: 22, color: 'rgb(184, 178, 142)', textAlign: 'center', marginBottom: 14, fontWeight: '400' }}>
+                <ThemedText style={{ fontSize: 13, lineHeight: 20, color: 'rgb(184, 178, 142)', textAlign: 'center', marginBottom: 10, fontWeight: '400' }}>
                   {t('onboarding_notice.desc1')}
                 </ThemedText>
-                <ThemedText style={{ fontSize: 13.5, lineHeight: 22, color: 'rgb(184, 178, 142)', textAlign: 'center', marginBottom: 14, fontWeight: '400' }}>
+                <ThemedText style={{ fontSize: 13, lineHeight: 20, color: 'rgb(184, 178, 142)', textAlign: 'center', marginBottom: 10, fontWeight: '400' }}>
                   {t('onboarding_notice.desc2')}
                 </ThemedText>
-                <ThemedText style={{ fontSize: 14, lineHeight: 22, color: 'rgb(184, 178, 142)', textAlign: 'center', fontWeight: '600' }}>
+                <ThemedText style={{ fontSize: 13.5, lineHeight: 20, color: 'rgb(184, 178, 142)', textAlign: 'center', fontWeight: '600' }}>
                   {t('onboarding_notice.desc3')}
                 </ThemedText>
               </View>

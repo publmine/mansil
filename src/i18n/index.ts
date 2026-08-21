@@ -15,7 +15,7 @@ i18n.use(initReactI18next).init({
     en: { translation: enTranslation },
   },
   // lng: en, // 언어 영어로 테스트 하려면 이거 사용
-  lng: defaultLang, // 언어 기본값으로 하려면 이거 사용
+  lng: 'en', // 언어 기본값으로 하려면 이거 사용
   fallbackLng: 'en',
   interpolation: {
     escapeValue: false,
