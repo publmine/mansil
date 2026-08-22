@@ -25,25 +25,37 @@ export async function purchasePremiumSeason(): Promise<{ success: boolean; userC
     let customerInfo;
 
     // 1. RevenueCat Offerings (오퍼링) 조회 시도 (가장 안정적)
-    const offerings = await Purchases.getOfferings();
-    if (offerings.current && offerings.current.availablePackages.length > 0) {
-      // 현재 활성화된 패키지(예: lifetime, default)로 결제 진행
-      const targetPackage =
-        offerings.current.availablePackages.find(p => p.product.identifier === IAP_PRODUCT_ID) ||
-        offerings.current.availablePackages[0];
-      const purchaseResult = await Purchases.purchasePackage(targetPackage);
-      customerInfo = purchaseResult.customerInfo;
-    } else {
-      // 2. Fallback: Google Play Store 상품 정보 직접 조회 후 결제
-      const products = await Purchases.getProducts([IAP_PRODUCT_ID]);
+    try {
+      const offerings = await Purchases.getOfferings();
+      if (offerings.current && offerings.current.availablePackages.length > 0) {
+        // 현재 활성화된 패키지(예: lifetime, default)로 결제 진행
+        const targetPackage =
+          offerings.current.availablePackages.find(p => p.product.identifier === IAP_PRODUCT_ID) ||
+          offerings.current.availablePackages[0];
+        if (targetPackage) {
+          const purchaseResult = await Purchases.purchasePackage(targetPackage);
+          customerInfo = purchaseResult.customerInfo;
+        }
+      }
+    } catch {
+      // Continue to fallback
+    }
+
+    if (!customerInfo) {
+      // 2. Fallback: Google Play Store 상품 정보 직접 조회 후 결제 ('inapp' 타입 명시)
+      const products = await Purchases.getProducts([IAP_PRODUCT_ID], Purchases.PURCHASE_TYPE.INAPP);
       if (products && products.length > 0) {
         const purchaseResult = await Purchases.purchaseStoreProduct(products[0]);
         customerInfo = purchaseResult.customerInfo;
       } else {
-        // 3. Fallback: 상품 ID 직접 결제
-        const purchaseResult = await Purchases.purchaseProduct(IAP_PRODUCT_ID);
+        // 3. Fallback: 상품 ID 직접 결제 ('inapp' 타입 명시)
+        const purchaseResult = await Purchases.purchaseProduct(IAP_PRODUCT_ID, undefined, Purchases.PURCHASE_TYPE.INAPP);
         customerInfo = purchaseResult.customerInfo;
       }
+    }
+
+    if (!customerInfo) {
+      return { success: false, error: '결제 대상 상품을 불러올 수 없습니다.' };
     }
 
     const isUnlocked =
@@ -133,12 +145,12 @@ export async function purchaseSeedDonation(): Promise<{ success: boolean; userCa
 
     if (!purchaseResult) {
       // 2. Google Play Store 상품 정보 직접 조회 후 결제 ('inapp' 타입 명시)
-      const products = await Purchases.getProducts([SEED_DONATION_PRODUCT_ID], 'inapp' as any);
+      const products = await Purchases.getProducts([SEED_DONATION_PRODUCT_ID], Purchases.PURCHASE_TYPE.INAPP);
       if (products && products.length > 0) {
         purchaseResult = await Purchases.purchaseStoreProduct(products[0]);
       } else {
         // 3. Fallback: 상품 ID 직접 결제 ('inapp' 타입 명시)
-        purchaseResult = await Purchases.purchaseProduct(SEED_DONATION_PRODUCT_ID, undefined, 'inapp' as any);
+        purchaseResult = await Purchases.purchaseProduct(SEED_DONATION_PRODUCT_ID, undefined, Purchases.PURCHASE_TYPE.INAPP);
       }
     }
 
@@ -172,7 +184,7 @@ export async function getProductPrices(): Promise<{ premiumPrice?: string; seedP
 
     // 2. getProducts로 보완 조회
     if (!premiumPrice || !seedPrice) {
-      const products = await Purchases.getProducts([IAP_PRODUCT_ID, SEED_DONATION_PRODUCT_ID], 'inapp' as any);
+      const products = await Purchases.getProducts([IAP_PRODUCT_ID, SEED_DONATION_PRODUCT_ID], Purchases.PURCHASE_TYPE.INAPP);
       const premiumProd = products.find(p => p.identifier === IAP_PRODUCT_ID);
       const seedProd = products.find(p => p.identifier === SEED_DONATION_PRODUCT_ID);
       if (premiumProd && !premiumPrice) premiumPrice = premiumProd.priceString;
