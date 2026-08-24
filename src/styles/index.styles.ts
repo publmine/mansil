@@ -257,6 +257,8 @@ export const styles = StyleSheet.create({
     fontFamily: 'BookkMyungjo_Bold',
     letterSpacing: -0.4,
     paddingHorizontal: 8,
+    minWidth: 330,
+    flexWrap: 'wrap',
   },
   plantGrowthStageText: {
     fontSize: 12,

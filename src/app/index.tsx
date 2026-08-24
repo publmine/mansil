@@ -2170,7 +2170,6 @@ export default function HomeScreen() {
     }
   };
 
-
   const handlePurchaseSeedDonation = async () => {
     if (isSeedPurchasing) return;
     setIsSeedPurchasing(true);

@@ -38,5 +38,3 @@ export async function checkHasPurchased(): Promise<boolean> {
 export function addCustomerInfoUpdateListener(_callback: (hasPurchased: boolean) => void): () => void {
   return () => {};
 }
-
-

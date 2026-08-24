@@ -200,5 +200,3 @@ export async function getProductPrices(): Promise<{ premiumPrice?: string; seedP
     return {};
   }
 }
-
-
