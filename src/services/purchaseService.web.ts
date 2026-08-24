@@ -38,3 +38,8 @@ export async function checkHasPurchased(): Promise<boolean> {
 export function addCustomerInfoUpdateListener(_callback: (hasPurchased: boolean) => void): () => void {
   return () => {};
 }
+
+export async function debugResetAndSyncPurchases(): Promise<{ success: boolean; activeEntitlements: string[]; message?: string }> {
+  return { success: true, activeEntitlements: [], message: 'Web environment' };
+}
+

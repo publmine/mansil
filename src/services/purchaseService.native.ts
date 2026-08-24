@@ -200,3 +200,20 @@ export async function getProductPrices(): Promise<{ premiumPrice?: string; seedP
     return {};
   }
 }
+
+export async function debugResetAndSyncPurchases(): Promise<{ success: boolean; activeEntitlements: string[]; message?: string }> {
+  try {
+    if (Platform.OS === 'android') {
+      await Purchases.invalidateCustomerInfoCache();
+      await Purchases.syncPurchases();
+      const customerInfo = await Purchases.getCustomerInfo();
+      const active = Object.keys(customerInfo.entitlements.active || {});
+      return { success: true, activeEntitlements: active, message: '캐시 초기화 및 구글 동기화 완료!' };
+    }
+    return { success: true, activeEntitlements: [], message: '안드로이드 기기가 아닙니다.' };
+  } catch (error: any) {
+    console.error('[IAP Debug] Sync failed:', error);
+    return { success: false, activeEntitlements: [], message: error?.message || '동기화 실패' };
+  }
+}
+
