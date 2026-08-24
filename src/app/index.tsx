@@ -32,7 +32,7 @@ import { HealingColor, STEP_DETAILS_JSON, getHealingColors, getStepDetailsForSea
 import { MaxContentWidth, Spacing } from '@/constants/theme';
 import { ArchivedPlant, DiaryEntry, useGame } from '@/context/GameContext';
 import { playSoundEffect, triggerHaptic } from '@/services/feedback';
-import { addCustomerInfoUpdateListener, checkHasPurchased, debugResetAndSyncPurchases, getProductPrices, purchasePremiumSeason, purchaseSeedDonation, restorePurchases } from '@/services/purchaseService';
+import { addCustomerInfoUpdateListener, checkHasPurchased, getProductPrices, purchasePremiumSeason, purchaseSeedDonation, restorePurchases } from '@/services/purchaseService';
 import { styles } from '@/styles/index.styles';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as Sharing from 'expo-sharing';
@@ -2167,20 +2167,6 @@ export default function HomeScreen() {
     } catch (error: any) {
       console.error('Restore error:', error);
       showModal(t('common.notice'), getIAPErrorMessage(error?.message, 'iap.restore_error'));
-    }
-  };
-
-  const handleDebugResetPurchases = async () => {
-    try {
-      showToast('구글 동기화 및 캐시 초기화 진행 중...');
-      const result = await debugResetAndSyncPurchases();
-      if (result.success) {
-        showModal('테스트 결제 동기화', `동기화 완료!\n활성 권한: ${result.activeEntitlements.length > 0 ? result.activeEntitlements.join(', ') : '없음 (초기화됨)'}\n\n이제 프리미엄 잠금해제 버튼을 눌러 새 결제를 시도해 보세요.`);
-      } else {
-        showModal('동기화 실패', result.message || '오류 발생');
-      }
-    } catch (e: any) {
-      showModal('동기화 오류', e?.message || '알 수 없는 오류');
     }
   };
 
@@ -5341,16 +5327,6 @@ export default function HomeScreen() {
             >
               <ThemedText style={{ fontSize: 11, color: '#78909C', textDecorationLine: 'underline' }}>
                 {t('premium_modal.restore')}
-              </ThemedText>
-            </Pressable>
-
-            {/* [DEBUG/TEST ONLY] 결제 동기화 & 캐시 초기화 버튼 */}
-            <Pressable
-              style={{ alignItems: 'center', marginTop: 10, paddingVertical: 6, paddingHorizontal: 12, backgroundColor: 'rgba(255, 87, 34, 0.15)', borderRadius: 8, borderWidth: 1, borderColor: '#FF5722' }}
-              onPress={handleDebugResetPurchases}
-            >
-              <ThemedText style={{ fontSize: 11, color: '#FF7043', fontWeight: 'bold' }}>
-                🛠️ [테스트] 결제 캐시 초기화 & 구글 동기화
               </ThemedText>
             </Pressable>
           </View>

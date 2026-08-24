@@ -39,7 +39,4 @@ export function addCustomerInfoUpdateListener(_callback: (hasPurchased: boolean)
   return () => {};
 }
 
-export async function debugResetAndSyncPurchases(): Promise<{ success: boolean; activeEntitlements: string[]; message?: string }> {
-  return { success: true, activeEntitlements: [], message: 'Web environment' };
-}
 
