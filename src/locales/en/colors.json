@@ -1,180 +1,252 @@
 [
   {
-    "hex": "#ef4444",
+    "hex": "#D9534F",
+    "vividHex": "#ef4444",
     "name": "Courage Ruby",
     "meaning": "The inner strength to face life's challenges.",
     "type": "red"
   },
   {
-    "hex": "#f43f5e",
+    "hex": "#E06D85",
+    "vividHex": "#f43f5e",
     "name": "Blushing Blossom",
     "meaning": "The gentle compassion that embraces yourself.",
     "type": "red"
   },
   {
-    "hex": "#dc2626",
-    "name": "Radiant Flame",
-    "meaning": "A spark of passion that awakens a stagnant day.",
-    "type": "red"
-  },
-  {
-    "hex": "#ea580c",
+    "hex": "#D97736",
+    "vividHex": "#ea580c",
     "name": "Vibrant Mandarin",
     "meaning": "A positive energy that invites joyful change.",
     "type": "yellow"
   },
   {
-    "hex": "#f59e0b",
+    "hex": "#E5A33C",
+    "vividHex": "#f59e0b",
     "name": "Soleil of Joy",
     "meaning": "A pure hope shining beyond the darkness.",
     "type": "yellow"
   },
   {
-    "hex": "#eab308",
+    "hex": "#D8B247",
+    "vividHex": "#eab308",
     "name": "Healing Citron",
     "meaning": "An inner delight that brightens your heart.",
     "type": "yellow"
   },
   {
-    "hex": "#9a3412",
-    "name": "Grounded Terracotta",
-    "meaning": "A steady sense of balance beneath your feet.",
-    "type": "red"
-  },
-  {
-    "hex": "#db2777",
-    "name": "Rose Quartz Love",
-    "meaning": "A warm embrace for the parts of yourself that need healing.",
-    "type": "red"
-  },
-  {
-    "hex": "#16a34a",
-    "name": "Forest Calm",
-    "meaning": "A peaceful shade that quiets a busy mind.",
-    "type": "green"
-  },
-  {
-    "hex": "#0d9488",
-    "name": "Sage Breath",
-    "meaning": "A refreshing clarity that clears the heart.",
-    "type": "blue"
-  },
-  {
-    "hex": "#059669",
-    "name": "Emerald Life",
-    "meaning": "The vitality that nurtures new hope.",
-    "type": "green"
-  },
-  {
-    "hex": "#0891b2",
-    "name": "Tranquil Turquoise",
-    "meaning": "A gentle calm that restores focus and ease.",
-    "type": "blue"
-  },
-  {
-    "hex": "#22c55e",
+    "hex": "#75A866",
+    "vividHex": "#22c55e",
     "name": "Tender Sprout",
     "meaning": "The excitement of a new beginning, even when imperfect.",
     "type": "green"
   },
   {
-    "hex": "#14b8a6",
+    "hex": "#4E8A5E",
+    "vividHex": "#16a34a",
+    "name": "Forest Calm",
+    "meaning": "A peaceful shade that quiets a busy mind.",
+    "type": "green"
+  },
+  {
+    "hex": "#3B8B70",
+    "vividHex": "#059669",
+    "name": "Emerald Life",
+    "meaning": "The vitality that nurtures new hope.",
+    "type": "green"
+  },
+  {
+    "hex": "#468B85",
+    "vividHex": "#0d9488",
+    "name": "Sage Breath",
+    "meaning": "A refreshing clarity that clears the heart.",
+    "type": "blue"
+  },
+  {
+    "hex": "#499B93",
+    "vividHex": "#14b8a6",
     "name": "Healing Tide",
     "meaning": "A soothing warmth that washes away emotional waves.",
     "type": "blue"
   },
   {
-    "hex": "#115e59",
-    "name": "Mossy Haven",
-    "meaning": "A quiet support that remains by your side.",
-    "type": "green"
+    "hex": "#45859B",
+    "vividHex": "#0891b2",
+    "name": "Tranquil Turquoise",
+    "meaning": "A gentle calm that restores focus and ease.",
+    "type": "blue"
   },
   {
-    "hex": "#047857",
-    "name": "Dawn Mist Green",
-    "meaning": "A peaceful relief that settles anxiety.",
-    "type": "green"
-  },
-  {
-    "hex": "#2563eb",
+    "hex": "#4F75A8",
+    "vividHex": "#2563eb",
     "name": "Reflective Blue",
     "meaning": "A clear perspective that stays steady through sadness.",
     "type": "blue"
   },
   {
-    "hex": "#7c3aed",
-    "name": "Wisdom Amethyst",
-    "meaning": "The insight that helps you move beyond uncertainty.",
-    "type": "purple"
-  },
-  {
-    "hex": "#6366f1",
-    "name": "Aurora Lavender",
-    "meaning": "A violet comfort that soothes a weary mind.",
-    "type": "purple"
-  },
-  {
-    "hex": "#9333ea",
-    "name": "Contemplative Violet",
-    "meaning": "A journey toward discovering your truest self.",
-    "type": "purple"
-  },
-  {
-    "hex": "#3b82f6",
+    "hex": "#5C82B8",
+    "vividHex": "#3b82f6",
     "name": "Sapphire Comfort",
     "meaning": "A peaceful release for emotions long held inside.",
     "type": "blue"
   },
   {
-    "hex": "#1e3a8a",
-    "name": "Deep Indigo",
-    "meaning": "A quiet night for meeting your deepest wishes.",
-    "type": "blue"
-  },
-  {
-    "hex": "#8b5cf6",
-    "name": "Moonlit Whisper",
-    "meaning": "A guiding light that remains even in darkness.",
+    "hex": "#7375B5",
+    "vividHex": "#6366f1",
+    "name": "Aurora Lavender",
+    "meaning": "A violet comfort that soothes a weary mind.",
     "type": "purple"
   },
   {
-    "hex": "#d946ef",
+    "hex": "#7559A2",
+    "vividHex": "#7c3aed",
+    "name": "Wisdom Amethyst",
+    "meaning": "The insight that helps you move beyond uncertainty.",
+    "type": "purple"
+  },
+  {
+    "hex": "#8A57A4",
+    "vividHex": "#9333ea",
+    "name": "Contemplative Violet",
+    "meaning": "A journey toward discovering your truest self.",
+    "type": "purple"
+  },
+  {
+    "hex": "#A85FA8",
+    "vividHex": "#d946ef",
     "name": "Peaceful Opal",
     "meaning": "A gentle stillness that embraces the end of a busy day.",
     "type": "purple"
   },
   {
-    "hex": "#FFD700",
+    "hex": "#C95D87",
+    "vividHex": "#db2777",
+    "name": "Rose Quartz Love",
+    "meaning": "A warm embrace for the parts of yourself that need healing.",
+    "type": "red"
+  },
+  {
+    "hex": "#C84630",
+    "vividHex": "#dc2626",
+    "name": "Radiant Flame",
+    "meaning": "A spark of passion that awakens a stagnant day.",
+    "type": "red"
+  },
+  {
+    "hex": "#A0522D",
+    "vividHex": "#9a3412",
+    "name": "Grounded Terracotta",
+    "meaning": "A steady sense of balance beneath your feet.",
+    "type": "red"
+  },
+  {
+    "hex": "#B85D43",
+    "vividHex": "#c2410c",
+    "name": "Warm Cinnamon",
+    "meaning": "A comforting embrace that holds you tenderly.",
+    "type": "red"
+  },
+  {
+    "hex": "#6B7C52",
+    "vividHex": "#65a30d",
+    "name": "Moonlit Olive",
+    "meaning": "A grounded patience guarding inner peace.",
+    "type": "green"
+  },
+  {
+    "hex": "#38665E",
+    "vividHex": "#115e59",
+    "name": "Mossy Haven",
+    "meaning": "A quiet support that remains by your side.",
+    "type": "green"
+  },
+  {
+    "hex": "#3B755D",
+    "vividHex": "#047857",
+    "name": "Dawn Mist Green",
+    "meaning": "A peaceful relief that settles anxiety.",
+    "type": "green"
+  },
+  {
+    "hex": "#5D8A68",
+    "vividHex": "#10b981",
+    "name": "Morning Dew",
+    "meaning": "A clear stillness that invites a fresh start.",
+    "type": "green"
+  },
+  {
+    "hex": "#3E5C8A",
+    "vividHex": "#1d4ed8",
+    "name": "Healing Lapis",
+    "meaning": "A deep serenity that calms anxious thoughts.",
+    "type": "blue"
+  },
+  {
+    "hex": "#344B74",
+    "vividHex": "#1e3a8a",
+    "name": "Deep Indigo",
+    "meaning": "A quiet night for meeting your deepest wishes.",
+    "type": "blue"
+  },
+  {
+    "hex": "#7B6291",
+    "vividHex": "#a855f7",
+    "name": "Serene Lilac",
+    "meaning": "A quiet violet shade washing away worry.",
+    "type": "purple"
+  },
+  {
+    "hex": "#8570B5",
+    "vividHex": "#8b5cf6",
+    "name": "Moonlit Whisper",
+    "meaning": "A guiding light that remains even in darkness.",
+    "type": "purple"
+  },
+  {
+    "hex": "#CE7B91",
+    "vividHex": "#ec4899",
+    "name": "Sunset Rose",
+    "meaning": "A gentle evening pause that soothes your day.",
+    "type": "red"
+  },
+  {
+    "hex": "#E6C364",
+    "vividHex": "#FFD700",
     "name": "Golden Radiance",
     "meaning": "An awakening to your inner wisdom and dignity.",
     "type": "yellow"
   },
   {
-    "hex": "#ECEFF1",
+    "hex": "#DFE4EA",
+    "vividHex": "#ECEFF1",
     "name": "Silver Star",
     "meaning": "A clear inner light that purifies every uncertainty.",
     "type": "blue"
   },
   {
-    "hex": "#EAE5FC",
+    "hex": "#DDD6F3",
+    "vividHex": "#EAE5FC",
     "name": "Opal Glow",
     "meaning": "The limitless creativity and potential within you.",
     "type": "purple"
   },
   {
-    "hex": "#E5A9A9",
+    "hex": "#E2A5A5",
+    "vividHex": "#E5A9A9",
     "name": "Rose Gold Glow",
     "meaning": "A warm self-kindness that helps you bloom gently.",
     "type": "red"
   },
   {
-    "hex": "#A5F3FC",
+    "hex": "#9FE2EC",
+    "vividHex": "#A5F3FC",
     "name": "Aqua Sparkle",
     "meaning": "A refreshing release that washes away negativity.",
     "type": "blue"
   },
   {
-    "hex": "#B7F3D0",
+    "hex": "#A8E6C3",
+    "vividHex": "#B7F3D0",
     "name": "Emerald Pearl",
     "meaning": "A vibrant resilience that heals the heart.",
     "type": "green"

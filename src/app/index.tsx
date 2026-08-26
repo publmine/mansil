@@ -22,6 +22,7 @@ import Animated, {
   withDelay,
   withRepeat,
   withSequence,
+  withSpring,
   withTiming
 } from 'react-native-reanimated';
 import Svg, { Circle, ClipPath, Defs, Ellipse, G, Line, LinearGradient, Path, Polygon, RadialGradient, Rect, Stop } from 'react-native-svg';
@@ -332,17 +333,75 @@ interface BeakerProps {
 
 const EssenceBeaker: React.FC<BeakerProps> = ({ colorItem, ratio }) => {
   const animatedRatio = useSharedValue(0);
+  const [showTooltip, setShowTooltip] = useState(false);
+  const tooltipOpacity = useSharedValue(0);
+  const tooltipScale = useSharedValue(0.96);
+  const tooltipTranslateY = useSharedValue(2.5);
+  const tooltipTimerRef = useRef<any>(null);
+  const { selectBrush } = useGame();
 
   useEffect(() => {
     animatedRatio.value = withTiming(ratio, { duration: 600 });
   }, [ratio, animatedRatio]);
 
+  useEffect(() => {
+    return () => {
+      if (tooltipTimerRef.current) clearTimeout(tooltipTimerRef.current);
+    };
+  }, []);
+
+  const handlePress = () => {
+    selectBrush(colorItem.hex);
+    setShowTooltip(true);
+
+    tooltipOpacity.value = withTiming(1, { duration: 200, easing: Easing.out(Easing.quad) });
+    tooltipScale.value = withSpring(1, { damping: 22, stiffness: 140, mass: 0.7 });
+    tooltipTranslateY.value = withSpring(0, { damping: 22, stiffness: 140, mass: 0.7 });
+
+    if (tooltipTimerRef.current) clearTimeout(tooltipTimerRef.current);
+    tooltipTimerRef.current = setTimeout(() => {
+      tooltipOpacity.value = withTiming(0, { duration: 240, easing: Easing.in(Easing.quad) });
+      tooltipTranslateY.value = withTiming(-2, { duration: 240, easing: Easing.in(Easing.quad) });
+      setTimeout(() => {
+        setShowTooltip(false);
+      }, 250);
+    }, 1800);
+  };
+
   const animatedStyle = useAnimatedStyle(() => ({
     height: `${animatedRatio.value}%`,
   }));
 
+  const tooltipAnimatedStyle = useAnimatedStyle(() => ({
+    opacity: tooltipOpacity.value,
+    transform: [
+      { translateY: tooltipTranslateY.value },
+      { scale: tooltipScale.value },
+    ],
+  }));
+
   return (
-    <View style={styles.beakerCol}>
+    <Pressable
+      onPress={handlePress}
+      style={[styles.beakerCol, showTooltip && { zIndex: 100 }]}
+    >
+      {/* Tooltip Popup on Click with Smooth Toast Motion */}
+      {showTooltip && (
+        <Animated.View
+          style={[
+            styles.beakerTooltipBubble,
+            { borderColor: colorItem.hex },
+            Platform.OS === 'web' ? { boxShadow: `0 4px 12px ${colorItem.hex}55` } : {},
+            tooltipAnimatedStyle
+          ]}
+        >
+          <ThemedText style={styles.beakerTooltipText} numberOfLines={1}>
+            {colorItem.name}
+          </ThemedText>
+          <View style={styles.beakerTooltipArrow} />
+        </Animated.View>
+      )}
+
       <ThemedText type="smallBold" style={{ color: colorItem.hex, fontSize: 11, textAlign: 'center' }} numberOfLines={1}>
         {colorItem.name}
       </ThemedText>
@@ -389,7 +448,7 @@ const EssenceBeaker: React.FC<BeakerProps> = ({ colorItem, ratio }) => {
         </Animated.View>
       </View>
       <ThemedText type="smallBold" style={styles.beakerValText}>{ratio}%</ThemedText>
-    </View>
+    </Pressable>
   );
 };
 
@@ -2044,7 +2103,8 @@ export default function HomeScreen() {
     startFourthGarden,
     unlockPremiumGarden,
     lockPremiumGarden,
-    writeDiary
+    writeDiary,
+    updateSelectedColorsTone,
   } = useGame();
 
   const [isPremiumModalOpen, setIsPremiumModalOpen] = useState(false);
@@ -2195,12 +2255,26 @@ export default function HomeScreen() {
   const designRef = useRef<View>(null);
   const completedCount = state.archive.length;
   const currentGardenCompleted = completedCount % 9;
+  const [paletteTone, setPaletteTone] = useState<'pastel' | 'vivid'>('pastel');
+  const toneSlideAnim = useSharedValue(0);
+  const toneSliderStyle = useAnimatedStyle(() => ({
+    transform: [{ translateX: toneSlideAnim.value * 41 }],
+  }));
+  const switchPaletteTone = (newTone: 'pastel' | 'vivid') => {
+    setPaletteTone(newTone);
+    toneSlideAnim.value = withSpring(newTone === 'vivid' ? 1 : 0, {
+      damping: 16,
+      stiffness: 200,
+      mass: 0.8,
+    });
+    updateSelectedColorsTone(newTone);
+    triggerHaptic('light');
+  };
   const skyFactor = Math.min((state.currentPotIndex + 1) / 9, 1);
   const { top: skyTopColor, bottom: skyBottomColor } = getSkyColors(state.currentPotIndex + 1);
   const unlockedCount =
-    currentGardenCompleted < 2 ? 12 :
-      currentGardenCompleted < 4 ? 18 :
-        currentGardenCompleted < 6 ? 24 : 30;
+    currentGardenCompleted < 2 ? 18 :
+      currentGardenCompleted < 4 ? 24 : 36;
 
   const glowScale = useSharedValue(1);
   const glowOpacity = useSharedValue(0.5);
@@ -2323,7 +2397,7 @@ export default function HomeScreen() {
       if (prices && (prices.premiumPrice || prices.seedPrice)) {
         setProductPrices(prices);
       }
-    }).catch(() => {});
+    }).catch(() => { });
   }, []);
 
   const handleOpenDiaryWriteModal = (question: string) => {
@@ -3294,9 +3368,32 @@ export default function HomeScreen() {
               <ThemedText style={styles.stepTitle}>
                 {t('color_select.step_title')}
               </ThemedText>
-              <ThemedText type="small" style={styles.stepSubText}>
-                ({t('common.bloomed_count', { count: currentGardenCompleted })} / {t('common.color_count', { count: unlockedCount })})
-              </ThemedText>
+              <View style={styles.subTextAndToneRow}>
+                <ThemedText type="small" style={styles.stepSubText}>
+                  ({t('common.bloomed_count', { count: currentGardenCompleted })} / {t('common.color_count', { count: unlockedCount })})
+                </ThemedText>
+
+                {/* Minimal Text-Only Tone Toggle with Smooth Sliding Pill Animation */}
+                <View style={styles.toneToggleContainer}>
+                  <Animated.View style={[styles.toneToggleSlider, toneSliderStyle]} />
+                  <Pressable
+                    style={styles.toneToggleBtn}
+                    onPress={() => switchPaletteTone('pastel')}
+                  >
+                    <ThemedText style={[styles.toneToggleText, paletteTone === 'pastel' && styles.toneToggleTextActive]}>
+                      {t('color_select.tone_pastel')}
+                    </ThemedText>
+                  </Pressable>
+                  <Pressable
+                    style={styles.toneToggleBtn}
+                    onPress={() => switchPaletteTone('vivid')}
+                  >
+                    <ThemedText style={[styles.toneToggleText, paletteTone === 'vivid' && styles.toneToggleTextActive]}>
+                      {t('color_select.tone_vivid')}
+                    </ThemedText>
+                  </Pressable>
+                </View>
+              </View>
             </View>
 
             {/* Vector Native Svg 24-Color Donut Wheel */}
@@ -3304,6 +3401,7 @@ export default function HomeScreen() {
               <View style={styles.wheelWrapper}>
                 {Platform.OS === 'web' ? (
                   <svg width={WHEEL_SIZE} height={WHEEL_SIZE} viewBox="0 0 200 200" shapeRendering="geometricPrecision">
+                    {/* 24 Color Wedges (Fixed DOM position for smooth CSS transitions) */}
                     {getHealingColors().map((colorItem, i) => {
                       const colorsList = getHealingColors();
                       const angleStep = 360 / colorsList.length;
@@ -3311,23 +3409,56 @@ export default function HomeScreen() {
                       const endAngle = (i + 1) * angleStep;
                       const pathData = getDonutPath(100, 100, 95, 55, startAngle, endAngle);
                       const isLocked = i >= unlockedCount;
-                      const fillColor = isLocked ? '#1A1C24' : colorItem.hex;
+                      const isSelected = state.selectedColors.some(c => c.name === colorItem.name || c.hex === colorItem.hex || (colorItem.vividHex && c.hex === colorItem.vividHex));
+                      const displayHex = (paletteTone === 'vivid' && colorItem.vividHex) ? colorItem.vividHex : colorItem.hex;
+                      const fillColor = isLocked ? '#1A1C24' : displayHex;
 
                       return (
                         <path
-                          key={colorItem.hex}
+                          key={colorItem.name}
                           d={pathData}
                           fill={fillColor}
                           stroke={fillColor}
                           strokeWidth="0.5"
-                          style={{ cursor: 'pointer' }}
-                          onClick={() => selectColor(colorItem)}
+                          strokeLinejoin="round"
+                          style={{
+                            cursor: isLocked || isSelected ? 'default' : 'pointer',
+                            transition: 'fill 0.3s ease, filter 0.3s ease, opacity 0.3s ease',
+                            filter: isSelected
+                              ? 'saturate(1.35) brightness(1.1)'
+                              : 'saturate(0.95)',
+                          }}
+                          onClick={() => !isLocked && !isSelected && selectColor({ ...colorItem, hex: displayHex })}
+                        />
+                      );
+                    })}
+
+                    {/* Selected White Border Overlay on Top */}
+                    {getHealingColors().map((colorItem, i) => {
+                      const isSelected = state.selectedColors.some(c => c.name === colorItem.name || c.hex === colorItem.hex || (colorItem.vividHex && c.hex === colorItem.vividHex));
+                      if (!isSelected) return null;
+                      const colorsList = getHealingColors();
+                      const angleStep = 360 / colorsList.length;
+                      const startAngle = i * angleStep;
+                      const endAngle = (i + 1) * angleStep;
+                      const pathData = getDonutPath(100, 100, 95, 55, startAngle, endAngle);
+
+                      return (
+                        <path
+                          key={`selected-stroke-${colorItem.name}`}
+                          d={pathData}
+                          fill="none"
+                          stroke="#FFFFFF"
+                          strokeWidth="1.2"
+                          strokeLinejoin="round"
+                          style={{ pointerEvents: 'none' }}
                         />
                       );
                     })}
                   </svg>
                 ) : (
                   <Svg width={WHEEL_SIZE} height={WHEEL_SIZE} viewBox="0 0 200 200">
+                    {/* 24 Color Wedges */}
                     {getHealingColors().map((colorItem, i) => {
                       const colorsList = getHealingColors();
                       const angleStep = 360 / colorsList.length;
@@ -3335,69 +3466,76 @@ export default function HomeScreen() {
                       const endAngle = (i + 1) * angleStep;
                       const pathData = getDonutPath(100, 100, 95, 55, startAngle, endAngle);
                       const isLocked = i >= unlockedCount;
-                      const fillColor = isLocked ? '#1A1C24' : colorItem.hex;
+                      const isSelected = state.selectedColors.some(c => c.name === colorItem.name || c.hex === colorItem.hex || (colorItem.vividHex && c.hex === colorItem.vividHex));
+                      const displayHex = (paletteTone === 'vivid' && colorItem.vividHex) ? colorItem.vividHex : colorItem.hex;
+                      const fillColor = isLocked ? '#1A1C24' : displayHex;
 
                       return (
                         <Path
-                          key={colorItem.hex}
+                          key={colorItem.name}
                           d={pathData}
                           fill={fillColor}
                           stroke={fillColor}
                           strokeWidth={0.5}
-                          onPress={() => selectColor(colorItem)}
+                          strokeLinejoin="round"
+                          onPress={() => !isLocked && !isSelected && selectColor({ ...colorItem, hex: displayHex })}
+                        />
+                      );
+                    })}
+
+                    {/* Selected White Border Overlay */}
+                    {getHealingColors().map((colorItem, i) => {
+                      const isSelected = state.selectedColors.some(c => c.name === colorItem.name || c.hex === colorItem.hex || (colorItem.vividHex && c.hex === colorItem.vividHex));
+                      if (!isSelected) return null;
+                      const colorsList = getHealingColors();
+                      const angleStep = 360 / colorsList.length;
+                      const startAngle = i * angleStep;
+                      const endAngle = (i + 1) * angleStep;
+                      const pathData = getDonutPath(100, 100, 95, 55, startAngle, endAngle);
+
+                      return (
+                        <Path
+                          key={`selected-stroke-${colorItem.name}`}
+                          d={pathData}
+                          fill="none"
+                          stroke="#FFFFFF"
+                          strokeWidth={1.2}
+                          strokeLinejoin="round"
                         />
                       );
                     })}
                   </Svg>
                 )}
 
-                {/* Center Hole: Interactive Start Button when 3 colors selected */}
+                {/* Center Hole: Status & Selection Progress */}
                 <View style={styles.wheelHole}>
-                  {state.selectedColors.length === 3 ? (
-                    <>
-                      <WheelPulseGlow />
-                      <Pressable
-                        onPress={() => {
-                          resetCanvas();
-                          navigateTo('coloring');
-                        }}
-                        style={styles.wheelCenterBtn}
-                      >
-                        <ThemedText style={[
-                          styles.wheelCenterBtnText,
-                          isEn() && { lineHeight: 15 }
-                        ]}>
-                          {t('color_select.enter_drawing')}
-                        </ThemedText>
-                      </Pressable>
-                    </>
-                  ) : (
-                    <View style={{ alignItems: 'center', justifyContent: 'center' }}>
-                      <ThemedText style={styles.holeLabel}>
-                        {t('color_select.selection_count', { count: state.selectedColors.length })}
-                      </ThemedText>
-                      <View style={styles.holeDotRow}>
-                        {[0, 1, 2].map((idx) => {
-                          const item = state.selectedColors[idx];
-                          return (
-                            <View
-                              key={idx}
-                              style={[
-                                styles.holeDot,
-                                item ? { backgroundColor: item.hex, borderColor: item.hex } : { backgroundColor: 'transparent' }
-                              ]}
-                            />
-                          );
-                        })}
-                      </View>
+                  <View style={{ alignItems: 'center', justifyContent: 'center' }}>
+                    <ThemedText style={styles.holeLabel}>
+                      {t('color_select.selection_count', { count: state.selectedColors.length })}
+                    </ThemedText>
+                    <View style={styles.holeDotRow}>
+                      {[0, 1, 2, 3, 4].map((idx) => {
+                        const item = state.selectedColors[idx];
+                        const isOptional = idx >= 3;
+                        return (
+                          <View
+                            key={idx}
+                            style={[
+                              styles.holeDot,
+                              isOptional && { borderStyle: 'dashed', borderColor: '#4A5543' },
+                              item ? { backgroundColor: item.hex, borderColor: item.hex, borderStyle: 'solid' } : { backgroundColor: 'transparent' }
+                            ]}
+                          />
+                        );
+                      })}
                     </View>
-                  )}
+                  </View>
                 </View>
 
-                {/* Lock Overlays based on unlockedCount — immune to threshold changes */}
+                {/* Lock Overlays based on unlockedCount (18 -> 24 -> 36) */}
 
-                {/* 12 unlocked: 18 gray wedges on left half — positioned precisely on dark arc */}
-                {unlockedCount === 12 && (() => {
+                {/* 18 unlocked: 18 gray wedges on left half */}
+                {unlockedCount === 18 && (() => {
                   const scaleRatio = WHEEL_SIZE / 200;
                   const viewX = 25 * scaleRatio;
                   const viewY = 100 * scaleRatio;
@@ -3408,9 +3546,9 @@ export default function HomeScreen() {
                       style={{
                         position: 'absolute',
                         left: viewX - 44,
-                        top: viewY - 54,
+                        top: viewY - 50,
                         width: 88,
-                        height: 108,
+                        height: 100,
                         justifyContent: 'center',
                         alignItems: 'center',
                         zIndex: 25,
@@ -3436,27 +3574,27 @@ export default function HomeScreen() {
                         lineHeight: isEn() ? 11 : 13,
                         opacity: 0.85,
                       }}>
-                        {t('color_select.locked_color_desc')}
+                        {isEn() ? "Awakens when 2 flowers bloom." : `꽃 2송이 완개 시\n감정의 색이 깨어납니다`}
                       </ThemedText>
                     </View>
                   );
                 })()}
 
-                {/* 18 unlocked: 12 gray wedges on left arc — title centered in gray arc */}
-                {unlockedCount === 18 && (() => {
+                {/* 24 unlocked: 12 gray wedges on top-left arc (3단계 잠금 구간: 열쇠아이콘과 봉인된 감정의 색만 표시) */}
+                {unlockedCount === 24 && (() => {
                   const scaleRatio = WHEEL_SIZE / 200;
-                  const viewX = 25 * scaleRatio;
-                  const viewY = 100 * scaleRatio;
+                  const viewX = 35 * scaleRatio;
+                  const viewY = 62.5 * scaleRatio;
 
                   return (
                     <View
                       pointerEvents="none"
                       style={{
                         position: 'absolute',
-                        left: viewX - 42,
-                        top: viewY - 30,
-                        width: 84,
-                        height: 60,
+                        left: viewX - 44,
+                        top: viewY - 40,
+                        width: 88,
+                        height: 80,
                         justifyContent: 'center',
                         alignItems: 'center',
                         zIndex: 25,
@@ -3468,91 +3606,121 @@ export default function HomeScreen() {
                         resizeMode="contain"
                       />
                       <ThemedText style={{
-                        fontSize: 11,
+                        fontSize: 10.5,
                         color: '#9A9FB0',
                         fontWeight: 'bold',
                         textAlign: 'center',
-                        lineHeight: isEn() ? 13 : 14,
+                        lineHeight: isEn() ? 12 : 13,
                       }}>{t('color_select.locked_color_title')}</ThemedText>
                     </View>
                   );
                 })()}
-
-                {/* 24 unlocked: 6 gray wedges — lock icon only, positioned on locked area */}
-                {unlockedCount === 24 && (() => {
-                  const lockedWedgesCount = 30 - unlockedCount;
-                  const avgLockedIndex = unlockedCount + (lockedWedgesCount - 1) / 2;
-                  const angleStep = 360 / 30;
-                  const avgLockedAngle = avgLockedIndex * angleStep + angleStep / 2;
-                  const avgAngleRad = (avgLockedAngle - 90) * Math.PI / 180;
-                  const lockRadius = 75;
-                  const lockX = 100 + lockRadius * Math.cos(avgAngleRad);
-                  const lockY = 100 + lockRadius * Math.sin(avgAngleRad);
-                  const scaleRatio = WHEEL_SIZE / 200;
-                  const viewX = lockX * scaleRatio;
-                  const viewY = lockY * scaleRatio;
-
-                  return (
-                    <View
-                      pointerEvents="none"
-                      style={[
-                        styles.lockIndicatorBadge,
-                        {
-                          left: viewX - 32,
-                          top: viewY - 18,
-                        }
-                      ]}
-                    >
-                      <Image
-                        source={require('../../assets/images/lock.png')}
-                        style={{ width: 18, height: 18 }}
-                        resizeMode="contain"
-                      />
-                    </View>
-                  );
-                })()}
               </View>
             </View>
 
-            {/* Chosen Color Capsule Bar */}
-            <View style={styles.chosenSection}>
-              <View style={styles.chosenCapsulesGrid}>
+            {/* 3 Required + 2 Optional Color Selection Bar */}
+            <View style={styles.colorBarContainer}>
+              <View style={styles.colorSlotsRow}>
+                {/* 3 Required Slots */}
                 {[0, 1, 2].map((idx) => {
                   const item = state.selectedColors[idx];
-                  return (
-                    <View key={idx} style={styles.capsuleCard}>
-                      {item ? (
-                        <>
-                          <Pressable
-                            style={styles.capsuleCloseBtn}
-                            onPress={() => removeSelectedColor(item.hex)}
-                          >
-                            <ThemedText style={styles.closeBtnText}>×</ThemedText>
-                          </Pressable>
+                  return item ? (
+                    <Pressable
+                      key={item.hex}
+                      onPress={() => removeSelectedColor(item.hex)}
+                      style={styles.colorSlotFilledWrapper}
+                    >
+                      <View style={[styles.colorSlotCircle, { backgroundColor: item.hex }]} />
+                      <View style={styles.colorSlotCloseBtn}>
+                        {Platform.OS === 'web' ? (
+                          <svg width="7" height="7" viewBox="0 0 10 10">
+                            <line x1="2" y1="2" x2="8" y2="8" stroke="#FFFFFF" strokeWidth="1.8" strokeLinecap="round" />
+                            <line x1="8" y1="2" x2="2" y2="8" stroke="#FFFFFF" strokeWidth="1.8" strokeLinecap="round" />
+                          </svg>
+                        ) : (
+                          <Svg width={7} height={7} viewBox="0 0 10 10">
+                            <Line x1={2} y1={2} x2={8} y2={8} stroke="#FFFFFF" strokeWidth={1.8} strokeLinecap="round" />
+                            <Line x1={8} y1={2} x2={2} y2={8} stroke="#FFFFFF" strokeWidth={1.8} strokeLinecap="round" />
+                          </Svg>
+                        )}
+                      </View>
+                    </Pressable>
+                  ) : (
+                    <View key={idx} style={styles.colorSlotEmptyRequired}>
+                      <ThemedText style={styles.colorSlotEmptyText}>{idx + 1}</ThemedText>
+                    </View>
+                  );
+                })}
 
-                          <AnimatedColorCircle
-                            color={item.hex}
-                            size={32}
-                            style={styles.capsuleDot}
-                          />
-                          <ThemedText type="smallBold" style={styles.capsuleText} numberOfLines={1}>
-                            {item.name}
-                          </ThemedText>
-                          <ThemedText style={styles.capsuleSubText}>{t('color_select.extracted')}</ThemedText>
-                        </>
-                      ) : (
-                        <View style={styles.capsuleEmpty}>
-                          <View style={styles.capsuleEmptyCircle}>
-                            <ThemedText style={styles.emptyCircleNum}>{idx + 1}</ThemedText>
-                          </View>
-                          <ThemedText type="small" style={styles.capsuleEmptyText}>{t('color_select.extract_emotion')}</ThemedText>
-                        </View>
-                      )}
+                {/* Vertical Divider */}
+                <View style={styles.colorSlotDivider} />
+
+                {/* 2 Optional Slots */}
+                {[3, 4].map((idx) => {
+                  const item = state.selectedColors[idx];
+                  return item ? (
+                    <Pressable
+                      key={item.hex}
+                      onPress={() => removeSelectedColor(item.hex)}
+                      style={styles.colorSlotFilledWrapper}
+                    >
+                      <View style={[styles.colorSlotCircle, { backgroundColor: item.hex }]} />
+                      <View style={styles.colorSlotCloseBtn}>
+                        {Platform.OS === 'web' ? (
+                          <svg width="7" height="7" viewBox="0 0 10 10">
+                            <line x1="2" y1="2" x2="8" y2="8" stroke="#FFFFFF" strokeWidth="1.8" strokeLinecap="round" />
+                            <line x1="8" y1="2" x2="2" y2="8" stroke="#FFFFFF" strokeWidth="1.8" strokeLinecap="round" />
+                          </svg>
+                        ) : (
+                          <Svg width={7} height={7} viewBox="0 0 10 10">
+                            <Line x1={2} y1={2} x2={8} y2={8} stroke="#FFFFFF" strokeWidth={1.8} strokeLinecap="round" />
+                            <Line x1={8} y1={2} x2={2} y2={8} stroke="#FFFFFF" strokeWidth={1.8} strokeLinecap="round" />
+                          </Svg>
+                        )}
+                      </View>
+                    </Pressable>
+                  ) : (
+                    <View key={idx} style={styles.colorSlotEmptyOptional}>
+                      <ThemedText style={styles.colorSlotPlusText}>+</ThemedText>
                     </View>
                   );
                 })}
               </View>
+
+              {/* Right Side Info Label */}
+              <View style={styles.colorBarInfo}>
+                <ThemedText style={styles.colorBarTitle}>
+                  {t('color_select.selected_colors_count', { count: state.selectedColors.length })}
+                </ThemedText>
+                <ThemedText style={styles.colorBarSubtitle}>
+                  {t('color_select.selection_rules')}
+                </ThemedText>
+              </View>
             </View>
+
+            {/* Bottom Full-width Mandala Drawing Button */}
+            <Pressable
+              disabled={state.selectedColors.length < 3}
+              onPress={() => {
+                resetCanvas();
+                navigateTo('coloring');
+              }}
+              style={[
+                styles.colorSelectBottomBtn,
+                state.selectedColors.length >= 3
+                  ? styles.colorSelectBottomBtnActive
+                  : styles.colorSelectBottomBtnDisabled
+              ]}
+            >
+              <ThemedText style={[
+                styles.colorSelectBottomBtnText,
+                state.selectedColors.length >= 3
+                  ? styles.colorSelectBottomBtnTextActive
+                  : styles.colorSelectBottomBtnTextDisabled
+              ]}>
+                {t('color_select.enter_drawing')}
+              </ThemedText>
+            </Pressable>
           </View>
         )}
 
@@ -3604,13 +3772,11 @@ export default function HomeScreen() {
 
               {/* Liquid Beaker essence row */}
               <View style={styles.essenceBeakersRow}>
-                {[0, 1, 2].map((idx) => {
-                  const colorItem = state.selectedColors[idx];
-                  if (!colorItem) return null;
+                {state.selectedColors.map((colorItem, idx) => {
                   const ratio = state.bottleRatios[idx] || 0;
 
                   return (
-                    <EssenceBeaker key={idx} colorItem={colorItem} ratio={ratio} />
+                    <EssenceBeaker key={colorItem.hex} colorItem={colorItem} ratio={ratio} />
                   );
                 })}
               </View>
@@ -3806,27 +3972,29 @@ export default function HomeScreen() {
 
               {/* Brush & Complete actions bar */}
               <View style={styles.brushSection}>
-                <View style={styles.brushRow}>
-                  {state.selectedColors.map((colorItem) => {
-                    const isActive = state.currentColor === colorItem.hex;
-                    return (
-                      <Pressable
-                        key={colorItem.hex}
-                        onPress={() => selectBrush(colorItem.hex)}
-                        style={[
-                          styles.brushCircle,
-                          {
-                            backgroundColor: colorItem.hex,
-                            shadowColor: colorItem.hex
-                          },
-                          isActive && styles.brushCircleActive,
-                          Platform.OS === 'web' ? {
-                            boxShadow: isActive ? `0 0 24px ${colorItem.hex}` : `0 0 14px ${colorItem.hex}`,
-                          } : Platform.OS === 'ios' ? styles.glowingShadow : {}
-                        ]}
-                      />
-                    );
-                  })}
+                <View style={styles.brushRowContainer}>
+                  <View style={styles.brushRow}>
+                    {state.selectedColors.map((colorItem) => {
+                      const isActive = state.currentColor === colorItem.hex;
+                      return (
+                        <Pressable
+                          key={colorItem.hex}
+                          onPress={() => selectBrush(colorItem.hex)}
+                          style={[
+                            styles.brushCircle,
+                            {
+                              backgroundColor: colorItem.hex,
+                              shadowColor: colorItem.hex
+                            },
+                            isActive && styles.brushCircleActive,
+                            Platform.OS === 'web' ? {
+                              boxShadow: isActive ? `0 0 24px ${colorItem.hex}` : `0 0 14px ${colorItem.hex}`,
+                            } : Platform.OS === 'ios' ? styles.glowingShadow : {}
+                          ]}
+                        />
+                      );
+                    })}
+                  </View>
                 </View>
 
                 <View style={styles.coloringActions}>

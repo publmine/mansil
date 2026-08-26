@@ -129,7 +129,7 @@ export class GameService {
       selectedColors: [],
       currentColor: '',
       mandalaColors: {},
-      bottleRatios: [0, 0, 0],
+      bottleRatios: [0, 0, 0, 0, 0],
       pots,
       archive: cleanArchive,
       shownMessages: gardenState.shownMessages,

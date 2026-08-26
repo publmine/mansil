@@ -41,16 +41,21 @@
   },
   "color_select": {
     "step_indicator": "STEP 01. 마음의 컬러 선택",
-    "step_title": "지금 이순간 끌리는 컬러 세 가지를 선택해주세요.",
+    "step_title": "지금 이순간 끌리는 컬러를 선택해주세요.",
     "selected_colors": "선택된 마음의 컬러",
-    "select_all_three": "색상을 3가지 모두 선택해주세요.",
+    "select_all_three": "색상을 최소 3가지 선택해주세요.",
+    "selected_colors_count": "선택된 컬러 {{count}}/5",
+    "selection_rules": "필수 3개 + 선택 최대 2개",
     "next_coloring": "다음: 만다라 채색하기",
     "locked_color_title": "봉인된 \n감정의 색",
     "locked_color_desc": "꽃 두 송이가\n마음의 색을\n깨웁니다.",
     "extracted": "추출 완료",
     "extract_emotion": "감정 추출",
     "enter_drawing": "만다라 드로잉 진입",
-    "selection_count": "컬러 선택 ({{count}}/3)"
+    "selection_count": "컬러 선택 ({{count}}/5)",
+    "guide_touch_wheel": "원형 컬러 휠을 터치하여 마음의 색을 추출해주세요.",
+    "tone_pastel": "파스텔",
+    "tone_vivid": "비비드"
   },
   "mandala_coloring": {
     "step_indicator": "STEP 02. 마음의 만다라 채색",

@@ -19,8 +19,8 @@
     "garden1": "Garden 1",
     "garden2": "Garden 2",
     "garden3": "Garden 3",
-    "bloomed_count": "Flowers in Bloom: {{count}}",
-    "color_count": "Feeling Colors: {{count}}",
+    "bloomed_count": "Bloomed: {{count}}",
+    "color_count": "Colors: {{count}}",
     "waiting_for_seed": "Seed Waiting"
   },
   "greenhouse": {
@@ -41,16 +41,21 @@
   },
   "color_select": {
     "step_indicator": "STEP 01. Choose Your Colors",
-    "step_title": "Which three colors speak to you today?",
+    "step_title": "Which colors speak to you right now?",
     "selected_colors": "Selected Colors",
-    "select_all_three": "Please select all three colors.",
+    "select_all_three": "Please select at least three colors.",
+    "selected_colors_count": "Selected Colors {{count}}/5",
+    "selection_rules": "3 Required + Up to 2 Optional",
     "next_coloring": "Next: Color the Mandala",
     "locked_color_title": "Hidden\nFeeling Color",
     "locked_color_desc": "Two blooming flowers\nwill awaken\nthis color.",
     "extracted": "Discovered",
     "extract_emotion": "Discover Feelings",
     "enter_drawing": "Enter Mandala Drawing",
-    "selection_count": "Select Colors ({{count}}/3)"
+    "selection_count": "Select Colors ({{count}}/5)",
+    "guide_touch_wheel": "Touch the color wheel to extract emotional colors.",
+    "tone_pastel": "Pastel",
+    "tone_vivid": "Vivid"
   },
   "mandala_coloring": {
     "step_indicator": "STEP 02. Color Your Mandala",

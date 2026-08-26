@@ -22,6 +22,7 @@ import { ALL_MANDALA_20, ALL_BUTTERFLY_MANDALA_45, ALL_BEE_BIRD_MANDALA_45, getT
 
 export interface HealingColor {
   hex: string;
+  vividHex?: string;
   name: string;
   meaning: string;
   type: 'red' | 'green' | 'purple' | 'blue' | 'yellow';

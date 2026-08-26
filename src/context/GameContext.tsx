@@ -52,6 +52,7 @@ interface GameContextType {
   unlockPremiumGarden: () => Promise<void>;
   lockPremiumGarden: () => Promise<void>;
   writeDiary: (potId: number, level: number, question: string, content: string) => void;
+  updateSelectedColorsTone: (tone: 'pastel' | 'vivid') => void;
 }
 
 const defaultState = (): GameState => ({
@@ -176,24 +177,23 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   const selectColor = (color: HealingColor) => {
-    if (state.selectedColors.some(c => c.hex === color.hex)) return;
+    if (state.selectedColors.some(c => c.name === color.name || c.hex === color.hex)) return;
 
     const completedCount = state.archive.length;
     const unlockedCount =
-      completedCount < 2 ? 12 :
-        completedCount < 4 ? 18 :
-          completedCount < 6 ? 24 : 30;
+      completedCount < 2 ? 18 :
+        completedCount < 4 ? 24 : 36;
 
-    const colorIndex = getHealingColors().findIndex(c => c.hex === color.hex);
+    const colorIndex = getHealingColors().findIndex(c => c.name === color.name || c.hex === color.hex || c.vividHex === color.hex);
     if (colorIndex >= unlockedCount) {
       triggerHaptic('error');
       playSoundEffect(150, 'square', 0.5);
       return;
     }
 
-    if (state.selectedColors.length < 3) {
+    if (state.selectedColors.length < 5) {
       triggerHaptic('light');
-      playSoundEffect(320 + (state.selectedColors.length * 120), 'sine', 0.5);
+      playSoundEffect(320 + (state.selectedColors.length * 80), 'sine', 0.5);
 
       const updated = [...state.selectedColors, color];
       setState(prev => ({
@@ -214,6 +214,29 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
         ...prev,
         selectedColors: updated,
         currentColor: nextBrush,
+        bottleRatios: [0, 0, 0, 0, 0]
+      };
+    });
+  };
+
+  const updateSelectedColorsTone = (tone: 'pastel' | 'vivid') => {
+    const allColors = getHealingColors();
+    setState(prev => {
+      const updated = prev.selectedColors.map(c => {
+        const found = allColors.find(item => item.name === c.name || item.hex === c.hex || (item.vividHex && item.vividHex === c.hex));
+        if (!found) return c;
+        const targetHex = (tone === 'vivid' && found.vividHex) ? found.vividHex : found.hex;
+        return { ...c, hex: targetHex };
+      });
+      const activeFound = allColors.find(item => item.hex === prev.currentColor || (item.vividHex && item.vividHex === prev.currentColor));
+      const nextCurrentColor = activeFound
+        ? ((tone === 'vivid' && activeFound.vividHex) ? activeFound.vividHex : activeFound.hex)
+        : (updated[0]?.hex || prev.currentColor);
+
+      return {
+        ...prev,
+        selectedColors: updated,
+        currentColor: nextCurrentColor,
       };
     });
   };
@@ -240,9 +263,12 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
       const newColors = { ...prev.mandalaColors, [segmentId]: prev.currentColor };
       const colorIndex = prev.selectedColors.findIndex(c => c.hex === prev.currentColor);
       const nextRatios = [...prev.bottleRatios];
+      while (nextRatios.length < prev.selectedColors.length) {
+        nextRatios.push(0);
+      }
 
       if (colorIndex !== -1 && !oldColor) {
-        nextRatios[colorIndex] = Math.min(100, nextRatios[colorIndex] + 15);
+        nextRatios[colorIndex] = Math.min(100, (nextRatios[colorIndex] || 0) + 15);
       }
 
       return {
@@ -269,7 +295,7 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
     setState(prev => ({
       ...prev,
       mandalaColors: {},
-      bottleRatios: [0, 0, 0],
+      bottleRatios: [0, 0, 0, 0, 0],
     }));
   };
 
@@ -279,7 +305,7 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
       selectedColors: [],
       currentColor: '',
       mandalaColors: {},
-      bottleRatios: [0, 0, 0],
+      bottleRatios: [0, 0, 0, 0, 0],
     }));
   };
 
@@ -416,6 +442,7 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
         unlockPremiumGarden,
         lockPremiumGarden,
         writeDiary,
+        updateSelectedColorsTone,
       }}
     >
       {children}
