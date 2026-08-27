@@ -10,7 +10,8 @@ import {
   StyleSheet,
   Text,
   TextInput,
-  View
+  View,
+  useWindowDimensions
 } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 
@@ -29,7 +30,9 @@ import Svg, { Circle, ClipPath, Defs, Ellipse, G, Line, LinearGradient, Path, Po
 
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
+import { ZoomableCanvas, ZoomableCanvasRef } from '@/components/ZoomableCanvas';
 import { HealingColor, STEP_DETAILS_JSON, getHealingColors, getStepDetailsForSeason, getTemplateById, isEn } from '@/constants/healing-data';
+import { COTTON_COLORS, CottonColorType, PAPER_TEXTURES, PaperTextureType } from '@/constants/paper-textures';
 import { MaxContentWidth, Spacing } from '@/constants/theme';
 import { ArchivedPlant, DiaryEntry, useGame } from '@/context/GameContext';
 import { playSoundEffect, triggerHaptic } from '@/services/feedback';
@@ -329,20 +332,57 @@ const SanctuaryBird: React.FC<SanctuaryCreatureProps> = ({ id, startX, startY })
 interface BeakerProps {
   colorItem: HealingColor;
   ratio: number;
+  activeTooltipHex: string | null;
+  setActiveTooltipHex: (hex: string | null) => void;
+  index: number;
+  totalCount: number;
 }
 
-const EssenceBeaker: React.FC<BeakerProps> = ({ colorItem, ratio }) => {
+const EssenceBeaker: React.FC<BeakerProps> = ({
+  colorItem,
+  ratio,
+  activeTooltipHex,
+  setActiveTooltipHex,
+  index,
+  totalCount
+}) => {
   const animatedRatio = useSharedValue(0);
-  const [showTooltip, setShowTooltip] = useState(false);
   const tooltipOpacity = useSharedValue(0);
   const tooltipScale = useSharedValue(0.96);
   const tooltipTranslateY = useSharedValue(2.5);
   const tooltipTimerRef = useRef<any>(null);
   const { selectBrush } = useGame();
+  const isTooltipOpen = activeTooltipHex === colorItem.hex;
+
+  const isFirst = index === 0;
+  const isLast = index === totalCount - 1;
+
+  // Tight, snug tooltip width calculation with compact side margins
+  const isEnglish = isEn();
+  const textWidth = Math.ceil(colorItem.name.length * (isEnglish ? 5.8 : 9.5) + (isEnglish ? 12 : 16));
+  const bubbleWidth = Math.max(isEnglish ? 40 : 48, textWidth);
 
   useEffect(() => {
     animatedRatio.value = withTiming(ratio, { duration: 600 });
   }, [ratio, animatedRatio]);
+
+  useEffect(() => {
+    if (activeTooltipHex === colorItem.hex) {
+      tooltipOpacity.value = withTiming(1, { duration: 200, easing: Easing.out(Easing.quad) });
+      tooltipScale.value = withSpring(1, { damping: 22, stiffness: 140, mass: 0.7 });
+      tooltipTranslateY.value = withSpring(0, { damping: 22, stiffness: 140, mass: 0.7 });
+
+      if (tooltipTimerRef.current) clearTimeout(tooltipTimerRef.current);
+      tooltipTimerRef.current = setTimeout(() => {
+        setActiveTooltipHex(null);
+      }, 1800);
+    } else {
+      if (tooltipTimerRef.current) clearTimeout(tooltipTimerRef.current);
+      tooltipOpacity.value = 0;
+      tooltipTranslateY.value = 2.5;
+      tooltipScale.value = 0.96;
+    }
+  }, [activeTooltipHex, colorItem.hex]);
 
   useEffect(() => {
     return () => {
@@ -352,20 +392,7 @@ const EssenceBeaker: React.FC<BeakerProps> = ({ colorItem, ratio }) => {
 
   const handlePress = () => {
     selectBrush(colorItem.hex);
-    setShowTooltip(true);
-
-    tooltipOpacity.value = withTiming(1, { duration: 200, easing: Easing.out(Easing.quad) });
-    tooltipScale.value = withSpring(1, { damping: 22, stiffness: 140, mass: 0.7 });
-    tooltipTranslateY.value = withSpring(0, { damping: 22, stiffness: 140, mass: 0.7 });
-
-    if (tooltipTimerRef.current) clearTimeout(tooltipTimerRef.current);
-    tooltipTimerRef.current = setTimeout(() => {
-      tooltipOpacity.value = withTiming(0, { duration: 240, easing: Easing.in(Easing.quad) });
-      tooltipTranslateY.value = withTiming(-2, { duration: 240, easing: Easing.in(Easing.quad) });
-      setTimeout(() => {
-        setShowTooltip(false);
-      }, 250);
-    }, 1800);
+    setActiveTooltipHex(colorItem.hex);
   };
 
   const animatedStyle = useAnimatedStyle(() => ({
@@ -383,26 +410,35 @@ const EssenceBeaker: React.FC<BeakerProps> = ({ colorItem, ratio }) => {
   return (
     <Pressable
       onPress={handlePress}
-      style={[styles.beakerCol, showTooltip && { zIndex: 100 }]}
+      style={[styles.beakerCol, isTooltipOpen && { zIndex: 100 }]}
     >
       {/* Tooltip Popup on Click with Smooth Toast Motion */}
-      {showTooltip && (
+      {isTooltipOpen && (
         <Animated.View
           style={[
             styles.beakerTooltipBubble,
-            { borderColor: colorItem.hex },
-            Platform.OS === 'web' ? { boxShadow: `0 4px 12px ${colorItem.hex}55` } : {},
+            {
+              width: bubbleWidth,
+              minWidth: bubbleWidth,
+              borderColor: colorItem.hex,
+            },
+            isFirst && { left: -4, alignSelf: 'flex-start' },
+            isLast && { right: -4, alignSelf: 'flex-end' },
+            !isFirst && !isLast && { alignSelf: 'center' },
+            Platform.OS === 'web' ? ({ boxShadow: `0 4px 12px ${colorItem.hex}55`, whiteSpace: 'nowrap' } as any) : {},
             tooltipAnimatedStyle
           ]}
         >
-          <ThemedText style={styles.beakerTooltipText} numberOfLines={1}>
+          <ThemedText
+            type="smallBold"
+            style={styles.beakerTooltipText}
+          >
             {colorItem.name}
           </ThemedText>
-          <View style={styles.beakerTooltipArrow} />
         </Animated.View>
       )}
 
-      <ThemedText type="smallBold" style={{ color: colorItem.hex, fontSize: 11, textAlign: 'center' }} numberOfLines={1}>
+      <ThemedText type="smallBold" style={{ color: colorItem.hex, fontSize: 10, textAlign: 'center' }} numberOfLines={1}>
         {colorItem.name}
       </ThemedText>
 
@@ -2078,6 +2114,33 @@ const getSkyColors = (completedCount: number): { top: string; bottom: string } =
 
 export default function HomeScreen() {
   const insets = useSafeAreaInsets();
+  const { height: windowHeight, width: windowWidth } = useWindowDimensions();
+  const isShortViewport = windowHeight < 650;
+
+  // Responsive Mandala Canvas Size:
+  // - If windowWidth < 400: keep current fixed rules (310 if windowHeight < 640 else 330)
+  // - If windowWidth >= 400: smoothly scale proportionally with available width and height (min: 330, max: 500)
+  const currentCanvasSize = (() => {
+    if (windowWidth < 400) {
+      return Math.min(windowHeight < 640 ? 310 : 330, windowWidth - 24);
+    }
+    const availableHeight = Math.max(330, windowHeight - 210);
+    const availableWidth = windowWidth - 32;
+    return Math.min(Math.max(330, Math.min(availableWidth, availableHeight)), 500);
+  })();
+
+  // Responsive Color Wheel Size:
+  // - If windowWidth < 400: keep current fixed rules (Math.min(360, windowWidth * 0.95))
+  // - If windowWidth >= 400: smoothly scale proportionally with available width and height (min: 360, max: 500)
+  const currentWheelSize = (() => {
+    if (windowWidth < 400) {
+      return Math.min(360, windowWidth * 0.95);
+    }
+    const availableHeight = Math.max(360, windowHeight - 240);
+    const availableWidth = windowWidth - 32;
+    return Math.min(Math.max(360, Math.min(availableWidth, availableHeight)), 500);
+  })();
+
   const { t } = useTranslation();
   const {
     state,
@@ -2253,12 +2316,17 @@ export default function HomeScreen() {
 
   const cardRef = useRef<View>(null);
   const designRef = useRef<View>(null);
+  const zoomCanvasRef = useRef<ZoomableCanvasRef>(null);
+  const [paperTexture, setPaperTexture] = useState<PaperTextureType>('cotton');
+  const [cottonColor, setCottonColor] = useState<CottonColorType>('cream');
+  const [isCottonMenuOpen, setIsCottonMenuOpen] = useState(false);
+  const [activeBeakerTooltipHex, setActiveBeakerTooltipHex] = useState<string | null>(null);
   const completedCount = state.archive.length;
   const currentGardenCompleted = completedCount % 9;
   const [paletteTone, setPaletteTone] = useState<'pastel' | 'vivid'>('pastel');
   const toneSlideAnim = useSharedValue(0);
   const toneSliderStyle = useAnimatedStyle(() => ({
-    transform: [{ translateX: toneSlideAnim.value * 41 }],
+    transform: [{ translateX: toneSlideAnim.value * 40 }],
   }));
   const switchPaletteTone = (newTone: 'pastel' | 'vivid') => {
     setPaletteTone(newTone);
@@ -2270,6 +2338,54 @@ export default function HomeScreen() {
     updateSelectedColorsTone(newTone);
     triggerHaptic('light');
   };
+
+  useEffect(() => {
+    AsyncStorage.getItem('@mansil_mandala_paper').then((saved) => {
+      if (saved && saved in PAPER_TEXTURES) {
+        setPaperTexture(saved as PaperTextureType);
+      }
+    }).catch(() => { });
+    AsyncStorage.getItem('@mansil_mandala_paper_cotton_color').then((saved) => {
+      if (saved && saved in COTTON_COLORS) {
+        setCottonColor(saved as CottonColorType);
+      }
+    }).catch(() => { });
+  }, []);
+
+  const changePaperTexture = (type: PaperTextureType) => {
+    if (type === 'cotton') {
+      if (paperTexture === 'cotton') {
+        setIsCottonMenuOpen((prev) => !prev);
+      } else {
+        setPaperTexture('cotton');
+        setIsCottonMenuOpen(true);
+        AsyncStorage.setItem('@mansil_mandala_paper', 'cotton').catch(() => { });
+      }
+    } else {
+      setPaperTexture(type);
+      setIsCottonMenuOpen(false);
+      AsyncStorage.setItem('@mansil_mandala_paper', type).catch(() => { });
+    }
+    triggerHaptic('light');
+  };
+
+  const selectCottonColor = (color: CottonColorType) => {
+    setCottonColor(color);
+    triggerHaptic('light');
+    AsyncStorage.setItem('@mansil_mandala_paper_cotton_color', color).catch(() => { });
+  };
+
+  const basePaperTheme = PAPER_TEXTURES[paperTexture] || PAPER_TEXTURES.cotton;
+  const currentPaperTheme = paperTexture === 'cotton'
+    ? {
+      ...basePaperTheme,
+      backgroundColor: COTTON_COLORS[cottonColor].backgroundColor,
+      uncoloredFill: COTTON_COLORS[cottonColor].uncoloredFill,
+      lineStroke: COTTON_COLORS[cottonColor].lineStroke,
+      guidelineStroke: COTTON_COLORS[cottonColor].guidelineStroke,
+      guidelineOpacity: COTTON_COLORS[cottonColor].guidelineOpacity,
+    }
+    : basePaperTheme;
   const skyFactor = Math.min((state.currentPotIndex + 1) / 9, 1);
   const { top: skyTopColor, bottom: skyBottomColor } = getSkyColors(state.currentPotIndex + 1);
   const unlockedCount =
@@ -2528,6 +2644,7 @@ export default function HomeScreen() {
 
   const handleExportDesign = async () => {
     try {
+      zoomCanvasRef.current?.resetZoom();
       if (Platform.OS === 'web') {
         const html2canvas = require('html2canvas');
         const element = designRef.current as any;
@@ -2829,6 +2946,9 @@ export default function HomeScreen() {
         <Image source={require('../../assets/images/bg.png')} style={{ width: 1, height: 1 }} />
         <Image source={require('../../assets/images/mandar_bg.png')} style={{ width: 1, height: 1 }} />
         <Image source={require('../../assets/images/mandar_step_bg.png')} style={{ width: 1, height: 1 }} />
+        <Image source={require('../../assets/images/drawing_paper_texture.jpg')} style={{ width: 1, height: 1 }} />
+        <Image source={require('../../assets/images/hanji_texture.jpg')} style={{ width: 1, height: 1 }} />
+        <Image source={require('../../assets/images/parchment_texture.jpg')} style={{ width: 1, height: 1 }} />
       </View>
 
       <SafeAreaView style={styles.safeArea}>
@@ -2850,7 +2970,54 @@ export default function HomeScreen() {
             <ThemedText type="smallBold" style={styles.logoText}>{t('common.logo_text')}</ThemedText>
           </Pressable>
 
-          {/* Score badge removed */}
+          {/* Top Right Action Buttons (Always visible like the logo) */}
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+            {/* Share Design button for coloring screen */}
+            {currentScreen === 'coloring' && (
+              <Pressable
+                onPress={handleExportDesign}
+                style={{
+                  width: 32,
+                  height: 32,
+                  borderRadius: 16,
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  backgroundColor: 'rgba(255, 255, 255, 0.08)',
+                  borderWidth: 1,
+                  borderColor: 'rgba(255,234,167,0.3)',
+                }}
+              >
+                <Image
+                  source={require('../../assets/images/ic_share.png')}
+                  style={{ width: 17, height: 17 }}
+                  resizeMode="contain"
+                />
+              </Pressable>
+            )}
+
+            {/* Official Cafe Icon - Always visible across all pages */}
+            <Pressable
+              onPress={() => {
+                Linking.openURL('https://cafe.naver.com/mandalaonsil');
+              }}
+              style={{
+                width: 32,
+                height: 32,
+                borderRadius: 16,
+                alignItems: 'center',
+                justifyContent: 'center',
+                backgroundColor: 'rgba(255, 255, 255, 0.08)',
+                borderWidth: 1,
+                borderColor: 'rgba(255,234,167,0.3)',
+              }}
+            >
+              <Image
+                source={require('../../assets/images/btn_gnb_cafe.png')}
+                style={{ width: 17, height: 17 }}
+                resizeMode="contain"
+              />
+            </Pressable>
+          </View>
         </View>
 
         {/* ------------------------------------------------------------- */}
@@ -3368,12 +3535,15 @@ export default function HomeScreen() {
               <ThemedText style={styles.stepTitle}>
                 {t('color_select.step_title')}
               </ThemedText>
-              <View style={styles.subTextAndToneRow}>
-                <ThemedText type="small" style={styles.stepSubText}>
-                  ({t('common.bloomed_count', { count: currentGardenCompleted })} / {t('common.color_count', { count: unlockedCount })})
-                </ThemedText>
+              <ThemedText type="small" style={styles.stepSubText}>
+                ({t('common.bloomed_count', { count: currentGardenCompleted })} / {t('common.color_count', { count: unlockedCount })})
+              </ThemedText>
+            </View>
 
-                {/* Minimal Text-Only Tone Toggle with Smooth Sliding Pill Animation */}
+            {/* Vector Native Svg 24-Color Donut Wheel */}
+            <View style={styles.wheelArea}>
+              <View style={[styles.wheelWrapper, { width: currentWheelSize, height: currentWheelSize }]}>
+                {/* Minimal Text-Only Tone Toggle with Smooth Sliding Pill Animation attached to top-right of wheel */}
                 <View style={styles.toneToggleContainer}>
                   <Animated.View style={[styles.toneToggleSlider, toneSliderStyle]} />
                   <Pressable
@@ -3393,14 +3563,9 @@ export default function HomeScreen() {
                     </ThemedText>
                   </Pressable>
                 </View>
-              </View>
-            </View>
 
-            {/* Vector Native Svg 24-Color Donut Wheel */}
-            <View style={styles.wheelArea}>
-              <View style={styles.wheelWrapper}>
                 {Platform.OS === 'web' ? (
-                  <svg width={WHEEL_SIZE} height={WHEEL_SIZE} viewBox="0 0 200 200" shapeRendering="geometricPrecision">
+                  <svg width={currentWheelSize} height={currentWheelSize} viewBox="0 0 200 200" shapeRendering="geometricPrecision">
                     {/* 24 Color Wedges (Fixed DOM position for smooth CSS transitions) */}
                     {getHealingColors().map((colorItem, i) => {
                       const colorsList = getHealingColors();
@@ -3457,7 +3622,7 @@ export default function HomeScreen() {
                     })}
                   </svg>
                 ) : (
-                  <Svg width={WHEEL_SIZE} height={WHEEL_SIZE} viewBox="0 0 200 200">
+                  <Svg width={currentWheelSize} height={currentWheelSize} viewBox="0 0 200 200">
                     {/* 24 Color Wedges */}
                     {getHealingColors().map((colorItem, i) => {
                       const colorsList = getHealingColors();
@@ -3536,8 +3701,8 @@ export default function HomeScreen() {
 
                 {/* 18 unlocked: 18 gray wedges on left half */}
                 {unlockedCount === 18 && (() => {
-                  const scaleRatio = WHEEL_SIZE / 200;
-                  const viewX = 25 * scaleRatio;
+                  const scaleRatio = currentWheelSize / 200;
+                  const viewX = 28.5 * scaleRatio;
                   const viewY = 100 * scaleRatio;
 
                   return (
@@ -3545,9 +3710,9 @@ export default function HomeScreen() {
                       pointerEvents="none"
                       style={{
                         position: 'absolute',
-                        left: viewX - 44,
+                        left: viewX - 45,
                         top: viewY - 50,
-                        width: 88,
+                        width: 90,
                         height: 100,
                         justifyContent: 'center',
                         alignItems: 'center',
@@ -3574,7 +3739,7 @@ export default function HomeScreen() {
                         lineHeight: isEn() ? 11 : 13,
                         opacity: 0.85,
                       }}>
-                        {isEn() ? "Awakens when 2 flowers bloom." : `꽃 2송이 완개 시\n감정의 색이 깨어납니다`}
+                        {t('color_select.locked_color_desc')}
                       </ThemedText>
                     </View>
                   );
@@ -3582,7 +3747,7 @@ export default function HomeScreen() {
 
                 {/* 24 unlocked: 12 gray wedges on top-left arc (3단계 잠금 구간: 열쇠아이콘과 봉인된 감정의 색만 표시) */}
                 {unlockedCount === 24 && (() => {
-                  const scaleRatio = WHEEL_SIZE / 200;
+                  const scaleRatio = currentWheelSize / 200;
                   const viewX = 35 * scaleRatio;
                   const viewY = 62.5 * scaleRatio;
 
@@ -3761,11 +3926,11 @@ export default function HomeScreen() {
           return (
             <View style={styles.screenWrapper}>
               {/* Dynamic Mandala Description header */}
-              <View style={{ alignItems: 'center', marginBottom: Spacing.one, paddingHorizontal: 16 }}>
-                <ThemedText type="smallBold" style={{ color: '#ddefb7', fontSize: 13, letterSpacing: 1, textTransform: 'uppercase' }}>
+              <View style={{ alignItems: 'center', marginBottom: 6, paddingHorizontal: 16 }}>
+                <ThemedText type="code" style={styles.stepIndicator}>
                   {t('mandala_coloring.step_indicator')}
                 </ThemedText>
-                <ThemedText type="small" style={{ color: '#9A9FB0', fontSize: 10, marginTop: 4, textAlign: 'center', lineHeight: 14 }}>
+                <ThemedText type="small" style={{ color: '#9A9FB0', fontSize: 10, marginTop: 2, textAlign: 'center', lineHeight: 14 }}>
                   {activeTemplate.title}
                 </ThemedText>
               </View>
@@ -3776,16 +3941,56 @@ export default function HomeScreen() {
                   const ratio = state.bottleRatios[idx] || 0;
 
                   return (
-                    <EssenceBeaker key={colorItem.hex} colorItem={colorItem} ratio={ratio} />
+                    <EssenceBeaker
+                      key={colorItem.hex}
+                      colorItem={colorItem}
+                      ratio={ratio}
+                      activeTooltipHex={activeBeakerTooltipHex}
+                      setActiveTooltipHex={setActiveBeakerTooltipHex}
+                      index={idx}
+                      totalCount={state.selectedColors.length}
+                    />
                   );
                 })}
               </View>
 
-              {/* Interactive Vector Mandala Canvas */}
+              {/* Interactive Vector Mandala Canvas with Pinch-to-Zoom */}
               <View style={styles.canvasContainer}>
-                <View style={styles.canvasBorder} ref={designRef} collapsable={false}>
+                <ZoomableCanvas
+                  ref={zoomCanvasRef}
+                  size={currentCanvasSize}
+                  resetKey={activeTemplateId}
+                  canvasRef={designRef}
+                  containerStyle={styles.canvasBorder}
+                >
+                  {/* Paper Background Base: Texture Image or Pure Clean Solid Paper */}
+                  <View
+                    style={[
+                      StyleSheet.absoluteFill,
+                      {
+                        width: currentCanvasSize,
+                        height: currentCanvasSize,
+                        borderRadius: currentCanvasSize / 2,
+                        backgroundColor: currentPaperTheme.backgroundColor,
+                        overflow: 'hidden',
+                      },
+                    ]}
+                  >
+                    {currentPaperTheme.image && (
+                      <Image
+                        source={currentPaperTheme.image}
+                        style={{
+                          width: currentCanvasSize,
+                          height: currentCanvasSize,
+                          borderRadius: currentCanvasSize / 2,
+                        }}
+                        resizeMode="cover"
+                      />
+                    )}
+                  </View>
+
                   {Platform.OS === 'web' ? (
-                    <svg width={CANVAS_SIZE} height={CANVAS_SIZE} viewBox="0 0 200 200">
+                    <svg width={currentCanvasSize} height={currentCanvasSize} viewBox="0 0 200 200" style={{ position: 'relative', zIndex: 2 }}>
                       <defs>
                         <clipPath id="mandalaCircleClipWeb">
                           <circle cx="100" cy="100" r="98" />
@@ -3793,15 +3998,24 @@ export default function HomeScreen() {
                       </defs>
 
                       {/* Outer circle guideline */}
-                      <circle cx="100" cy="100" r="98" fill="none" stroke="#D1D5DB" strokeWidth="1.5" strokeDasharray="4 4" />
+                      <circle
+                        cx="100"
+                        cy="100"
+                        r="98"
+                        fill="none"
+                        stroke={currentPaperTheme.guidelineStroke}
+                        strokeWidth="1.5"
+                        strokeDasharray="4 4"
+                        opacity={currentPaperTheme.guidelineOpacity}
+                      />
 
-                      {/* Clipped Mandala Content - removes any outer square background box */}
+                      {/* Clipped Mandala Content - Real Paper Base & Shapes */}
                       <g clipPath="url(#mandalaCircleClipWeb)">
                         {/* 1. Interactive Fill Layer (Position gap shifted & sealed with 1.8 stroke) */}
                         {sortedShapes.map((shape) => {
                           const isOutline = shape.id.toLowerCase().includes('outline');
                           const isNotouch = shape.id.toLowerCase().includes('notouch');
-                          const fill = isOutline ? '#000000' : (state.mandalaColors[shape.id] || '#8ea1d1ff');
+                          const fill = isOutline ? '#000000' : (state.mandalaColors[shape.id] || currentPaperTheme.uncoloredFill);
                           const notClickable = isOutline || isNotouch;
                           if (shape.type === 'circle') {
                             return (
@@ -3837,12 +4051,12 @@ export default function HomeScreen() {
                           }
                         })}
 
-                        {/* 2. Ultra-Thin 0.5px Crisp Single Line Overlay Layer */}
+                        {/* 2. Ultra-Thin 0.5px Crisp Paper Ink Stroke Line Overlay Layer */}
                         <g style={{ pointerEvents: 'none', opacity: 0.9 }}>
                           {sortedShapes.map((shape) => {
                             const isOutline = shape.id.toLowerCase().includes('outline');
                             if (isOutline) return null;
-                            const strokeColor = '#3c4c73';
+                            const strokeColor = currentPaperTheme.lineStroke;
                             if (shape.type === 'circle') {
                               return (
                                 <circle
@@ -3876,23 +4090,32 @@ export default function HomeScreen() {
                       </g>
                     </svg>
                   ) : (
-                    <Svg width={CANVAS_SIZE} height={CANVAS_SIZE} viewBox="0 0 200 200">
+                    <Svg width={currentCanvasSize} height={currentCanvasSize} viewBox="0 0 200 200" style={{ position: 'relative', zIndex: 2 }}>
                       <Defs>
                         <ClipPath id="mandalaCircleClipNative">
-                          <Circle cx="100" cy="100" r="98" />
+                          <Circle cx="100" cy="100" r={98} />
                         </ClipPath>
                       </Defs>
 
                       {/* Outer circle guideline */}
-                      <Circle cx="100" cy="100" r="98" fill="none" stroke="#D1D5DB" strokeWidth="1.5" strokeDasharray="4 4" />
+                      <Circle
+                        cx="100"
+                        cy="100"
+                        r={98}
+                        fill="none"
+                        stroke={currentPaperTheme.guidelineStroke}
+                        strokeWidth={1.5}
+                        strokeDasharray="4 4"
+                        opacity={currentPaperTheme.guidelineOpacity}
+                      />
 
-                      {/* Clipped Mandala Content - removes any outer square background box */}
+                      {/* Clipped Mandala Content - Real Paper Base & Shapes */}
                       <G clipPath="url(#mandalaCircleClipNative)">
                         {/* 1. Interactive Fill Layer (Position gap shifted & sealed with 1.8 stroke) */}
                         {sortedShapes.map((shape) => {
                           const isOutline = shape.id.toLowerCase().includes('outline');
                           const isNotouch = shape.id.toLowerCase().includes('notouch');
-                          const fill = isOutline ? '#000000' : (state.mandalaColors[shape.id] || '#8ea1d1ff');
+                          const fill = isOutline ? '#000000' : (state.mandalaColors[shape.id] || currentPaperTheme.uncoloredFill);
                           const notClickable = isOutline || isNotouch;
                           if (shape.type === 'circle') {
                             return (
@@ -3926,12 +4149,12 @@ export default function HomeScreen() {
                           }
                         })}
 
-                        {/* 2. Ultra-Thin 0.5px Crisp Single Line Overlay Layer */}
+                        {/* 2. Ultra-Thin 0.5px Crisp Paper Ink Stroke Line Overlay Layer */}
                         <G opacity={0.9}>
                           {sortedShapes.map((shape) => {
                             const isOutline = shape.id.toLowerCase().includes('outline');
                             if (isOutline) return null;
-                            const strokeColor = '#3c4c73';
+                            const strokeColor = currentPaperTheme.lineStroke;
                             if (shape.type === 'circle') {
                               return (
                                 <Circle
@@ -3967,12 +4190,120 @@ export default function HomeScreen() {
                       </G>
                     </Svg>
                   )}
-                </View>
+
+                  {/* Top Paper Texture Overlay Layer (Method 2: Multiplied Real Paper Grain on All Colors) */}
+                  {currentPaperTheme.image && (
+                    <View
+                      pointerEvents="none"
+                      style={[
+                        StyleSheet.absoluteFill,
+                        {
+                          width: currentCanvasSize,
+                          height: currentCanvasSize,
+                          borderRadius: currentCanvasSize / 2,
+                          overflow: 'hidden',
+                          opacity: paperTexture === 'cotton' ? (Platform.OS === 'web' ? 0.15 : 0.08) : (Platform.OS === 'web' ? 0.72 : 0.28),
+                          ...(Platform.OS === 'web' ? { mixBlendMode: 'multiply' } : {}),
+                          zIndex: 10,
+                        },
+                      ]}
+                    >
+                      <Image
+                        source={currentPaperTheme.image}
+                        style={{
+                          width: currentCanvasSize,
+                          height: currentCanvasSize,
+                          borderRadius: currentCanvasSize / 2,
+                        }}
+                        resizeMode="cover"
+                      />
+                    </View>
+                  )}
+                </ZoomableCanvas>
               </View>
 
-              {/* Brush & Complete actions bar */}
+              {/* Paper & Brush Actions Section */}
               <View style={styles.brushSection}>
                 <View style={styles.brushRowContainer}>
+                  {/* Paper Selector Pills (도화지, 한지, 양피지) */}
+                  <View style={{ position: 'relative', flexDirection: 'row', alignItems: 'center', gap: 4 }}>
+                    {/* Floating Cotton Color Submenu - Swatches Only */}
+                    {isCottonMenuOpen && paperTexture === 'cotton' && (
+                      <View style={{
+                        position: 'absolute',
+                        bottom: 34,
+                        left: 0,
+                        flexDirection: 'row',
+                        alignItems: 'center',
+                        backgroundColor: '#1E2330',
+                        borderRadius: 8,
+                        padding: 5,
+                        gap: 10,
+                        borderWidth: 1,
+                        borderColor: 'rgba(157, 186, 125, 0.45)',
+                        shadowColor: '#000',
+                        shadowOffset: { width: 0, height: 4 },
+                        shadowOpacity: 0.45,
+                        shadowRadius: 10,
+                        elevation: 12,
+                        zIndex: 9999,
+                      }}>
+                        {(Object.keys(COTTON_COLORS) as CottonColorType[]).map((cType) => {
+                          const cItem = COTTON_COLORS[cType];
+                          const isColSelected = cottonColor === cType;
+                          return (
+                            <Pressable
+                              key={cType}
+                              onPress={() => selectCottonColor(cType)}
+                              style={{
+                                width: 20,
+                                height: 20,
+                                borderRadius: 4,
+                                backgroundColor: cItem.dotColor,
+                                borderWidth: isColSelected ? 2 : 1,
+                                borderColor: isColSelected
+                                  ? '#FACC15'
+                                  : (cType === 'black' ? 'rgba(255, 255, 255, 0.35)' : 'rgba(0, 0, 0, 0.25)'),
+                                transform: isColSelected ? [{ scale: 1.15 }] : [],
+                              }}
+                            />
+                          );
+                        })}
+                      </View>
+                    )}
+
+                    {(Object.keys(PAPER_TEXTURES) as PaperTextureType[]).map((type) => {
+                      const item = PAPER_TEXTURES[type];
+                      const isSelected = paperTexture === type;
+                      return (
+                        <Pressable
+                          key={type}
+                          onPress={() => changePaperTexture(type)}
+                          style={{
+                            height: 26,
+                            justifyContent: 'center',
+                            alignItems: 'center',
+                            paddingHorizontal: 7,
+                            borderRadius: 7,
+                            backgroundColor: isSelected ? 'rgba(157, 186, 125, 0.22)' : 'rgba(255, 255, 255, 0.04)',
+                            borderWidth: 1,
+                            borderColor: isSelected ? '#9DBA7D' : 'rgba(255, 255, 255, 0.08)',
+                          }}
+                        >
+                          <ThemedText style={{
+                            fontSize: 10.5,
+                            fontWeight: isSelected ? '700' : '500',
+                            color: isSelected ? '#ddefb7' : '#9A9FB0',
+                            letterSpacing: 0.2,
+                          }}>
+                            {t(item.labelKey)}
+                          </ThemedText>
+                        </Pressable>
+                      );
+                    })}
+                  </View>
+
+                  {/* Color Selection Brush Circles */}
                   <View style={styles.brushRow}>
                     {state.selectedColors.map((colorItem) => {
                       const isActive = state.currentColor === colorItem.hex;
@@ -3988,7 +4319,7 @@ export default function HomeScreen() {
                             },
                             isActive && styles.brushCircleActive,
                             Platform.OS === 'web' ? {
-                              boxShadow: isActive ? `0 0 24px ${colorItem.hex}` : `0 0 14px ${colorItem.hex}`,
+                              boxShadow: isActive ? `0 0 20px ${colorItem.hex}` : `0 0 10px ${colorItem.hex}`,
                             } : Platform.OS === 'ios' ? styles.glowingShadow : {}
                           ]}
                         />
@@ -4013,50 +4344,6 @@ export default function HomeScreen() {
                     <ThemedText type="smallBold" style={styles.completeColorBtnText}>
                       {t('mandala_coloring.finish_flower')} ({progressPercent}%)
                     </ThemedText>
-                  </Pressable>
-                </View>
-
-                {/* Floating Action Buttons */}
-                <View style={{ position: 'absolute', right: -6, bottom: 80, alignItems: 'center', gap: 6, zIndex: 100 }}>
-                  <Pressable
-                    onPress={handleExportDesign}
-                    style={{
-                      width: 40,
-                      height: 40,
-                      borderRadius: 22,
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      borderWidth: 1,
-                      borderColor: 'rgba(255,234,167,0.3)',
-                      ...(Platform.OS === 'web' ? { boxShadow: '0 4px 12px rgba(0,0,0,0.5)' } : { elevation: 5, shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.5, shadowRadius: 4 }),
-                    }}
-                  >
-                    <Image
-                      source={require('../../assets/images/ic_share.png')}
-                      style={{ width: 22, height: 22 }}
-                      resizeMode="contain"
-                    />
-                  </Pressable>
-                  <Pressable
-                    onPress={() => {
-                      Linking.openURL('https://cafe.naver.com/mandalaonsil');
-                    }}
-                    style={{
-                      width: 40,
-                      height: 40,
-                      borderRadius: 22,
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      borderWidth: 1,
-                      borderColor: 'rgba(255,234,167,0.3)',
-                      ...(Platform.OS === 'web' ? { boxShadow: '0 4px 12px rgba(0,0,0,0.5)' } : { elevation: 5, shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.5, shadowRadius: 4 }),
-                    }}
-                  >
-                    <Image
-                      source={require('../../assets/images/btn_gnb_cafe.png')}
-                      style={{ width: 22, height: 22 }}
-                      resizeMode="contain"
-                    />
                   </Pressable>
                 </View>
               </View>

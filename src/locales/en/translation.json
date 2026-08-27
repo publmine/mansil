@@ -64,7 +64,13 @@
     "reset_canvas": "Reset",
     "progress": "Coloring Progress",
     "finish_flower": "Complete Reflection",
-    "color_more": "Continue coloring (50% or more required)"
+    "color_more": "Continue coloring (50% or more required)",
+    "paper_hanji": "Hanji",
+    "paper_cotton": "Paper",
+    "paper_parchment": "Parchment",
+    "cotton_white": "White",
+    "cotton_cream": "Off-White",
+    "cotton_black": "Black"
   },
   "diary": {
     "step_indicator": "STEP 03. Reflection Card",

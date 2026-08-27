@@ -64,7 +64,13 @@
     "reset_canvas": "초기화",
     "progress": "채색 진행도",
     "finish_flower": "마음 챙김 완료",
-    "color_more": "채색을 더 진행해주세요 (50% 이상)"
+    "color_more": "채색을 더 진행해주세요 (50% 이상)",
+    "paper_hanji": "한지",
+    "paper_cotton": "도화지",
+    "paper_parchment": "양피지",
+    "cotton_white": "흰색",
+    "cotton_cream": "미색",
+    "cotton_black": "검은색"
   },
   "diary": {
     "step_indicator": "STEP 03. 마음챙김 카드",

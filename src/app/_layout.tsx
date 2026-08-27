@@ -8,6 +8,8 @@ import { AnimatedSplashOverlay } from '@/components/animated-icon';
 import AppTabs from '@/components/app-tabs';
 import { GameProvider } from '@/context/GameContext';
 
+import { GestureHandlerRootView } from 'react-native-gesture-handler';
+
 SplashScreen.preventAutoHideAsync();
 
 export default function TabLayout() {
@@ -36,11 +38,13 @@ export default function TabLayout() {
   }
 
   return (
-    <GameProvider>
-      <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
-        <AnimatedSplashOverlay />
-        <AppTabs />
-      </ThemeProvider>
-    </GameProvider>
+    <GestureHandlerRootView style={{ flex: 1 }}>
+      <GameProvider>
+        <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
+          <AnimatedSplashOverlay />
+          <AppTabs />
+        </ThemeProvider>
+      </GameProvider>
+    </GestureHandlerRootView>
   );
 }

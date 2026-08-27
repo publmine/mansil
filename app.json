@@ -16,7 +16,7 @@
       "requireFullScreen": true
     },
     "android": {
-      "versionCode": 15,
+      "versionCode": 16,
       "adaptiveIcon": {
         "backgroundColor": "#0F1D10",
         "foregroundImage": "./assets/images/icon.png"
