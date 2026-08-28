@@ -6,6 +6,8 @@ import {
   Modal,
   Platform,
   Pressable,
+  Animated as RNAnimated,
+  Easing as RNEasing,
   ScrollView,
   StyleSheet,
   Text,
@@ -13,6 +15,7 @@ import {
   View,
   useWindowDimensions
 } from 'react-native';
+import { Gesture, GestureDetector, GestureHandlerRootView } from 'react-native-gesture-handler';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import Animated, {
@@ -2869,6 +2872,65 @@ export default function HomeScreen() {
   const archiveMandalaRef = useRef<View>(null);
   const [isExportingArchiveCard, setIsExportingArchiveCard] = useState(false);
 
+  // Bottom Sheet Swipe-Down & Tap to Dismiss (GPU Accelerated 60fps)
+  const archiveModalPanY = useRef(new RNAnimated.Value(0)).current;
+
+  const closeArchiveModal = () => {
+    RNAnimated.timing(archiveModalPanY, {
+      toValue: (windowHeight || 800) + 80,
+      duration: 380,
+      easing: RNEasing.inOut(RNEasing.cubic),
+      useNativeDriver: true,
+    }).start(() => {
+      setIsArchiveDetailModalOpen(false);
+    });
+
+    // 보장 타이머: 스프링/타이밍 콜백 지연 시에도 100% 모달 언마운트
+    setTimeout(() => {
+      setIsArchiveDetailModalOpen(false);
+    }, 400);
+  };
+
+  const archivePanGesture = Gesture.Pan()
+    .runOnJS(true)
+    .onUpdate((e) => {
+      if (e.translationY > 0) {
+        archiveModalPanY.setValue(e.translationY);
+      }
+    })
+    .onEnd((e) => {
+      if (e.translationY > 30 || e.velocityY > 200) {
+        closeArchiveModal();
+      } else {
+        RNAnimated.spring(archiveModalPanY, {
+          toValue: 0,
+          tension: 45,
+          friction: 10,
+          useNativeDriver: true,
+        }).start();
+      }
+    });
+
+  const archiveTapGesture = Gesture.Tap()
+    .runOnJS(true)
+    .onEnd(() => {
+      closeArchiveModal();
+    });
+
+  const archiveHandleGesture = Gesture.Race(archivePanGesture, archiveTapGesture);
+
+  useEffect(() => {
+    if (isArchiveDetailModalOpen) {
+      archiveModalPanY.setValue(windowHeight || 800);
+      RNAnimated.spring(archiveModalPanY, {
+        toValue: 0,
+        tension: 45,
+        friction: 10,
+        useNativeDriver: true,
+      }).start();
+    }
+  }, [isArchiveDetailModalOpen, windowHeight]);
+
   // Settings & Seed Donation Modal State
   const [isSettingsModalOpen, setIsSettingsModalOpen] = useState(false);
   const [isSeedModalOpen, setIsSeedModalOpen] = useState(false);
@@ -2906,7 +2968,14 @@ export default function HomeScreen() {
   const handleOpenArchiveStepDetail = (plant: any, stepLevel: number | 'bloom') => {
     setSelectedArchivePlant(plant);
     setSelectedArchiveStep(stepLevel);
+    archiveModalPanY.setValue(windowHeight || 800);
     setIsArchiveDetailModalOpen(true);
+    RNAnimated.spring(archiveModalPanY, {
+      toValue: 0,
+      tension: 45,
+      friction: 10,
+      useNativeDriver: true,
+    }).start();
     playSoundEffect(523.25, 'sine', 0.4);
   };
 
@@ -5008,7 +5077,12 @@ export default function HomeScreen() {
                       </View>
 
                       {/* Bottom Message Box */}
-                      <View style={[styles.cardMessageBox, currentLevel === 5 && { marginTop: 0, marginBottom: 4, transform: [{ translateY: -44 }] }]}>
+                      <View style={[
+                        styles.cardMessageBox,
+                        currentLevel === 5
+                          ? { marginTop: 0, marginBottom: 4, transform: [{ translateY: -44 }] }
+                          : { marginTop: 12 }
+                      ]}>
                         <ThemedText
                           type="default"
                           style={[
@@ -5316,6 +5390,7 @@ export default function HomeScreen() {
                                 <Pressable
                                   key={i}
                                   onPress={() => handleOpenArchiveStepDetail(plant, stepLevel)}
+                                  hitSlop={{ top: 8, bottom: 8, left: 6, right: 6 }}
                                   style={({ pressed }) => [
                                     styles.archiveColorDotBtn,
                                     { backgroundColor: c },
@@ -5830,309 +5905,359 @@ export default function HomeScreen() {
         </View>
       </Modal>
 
-      {/* ARCHIVE STEP & FLOWER DETAIL MODAL (FULL SCREEN) */}
+      {/* ARCHIVE STEP & FLOWER DETAIL MODAL (BOTTOM SHEET) */}
       <Modal
         visible={isArchiveDetailModalOpen}
-        transparent={false}
-        animationType="slide"
-        onRequestClose={() => setIsArchiveDetailModalOpen(false)}
+        transparent={true}
+        animationType="none"
+        onRequestClose={closeArchiveModal}
       >
-        <View style={{ flex: 1, width: '100%', height: '100%', backgroundColor: '#070b16' }}>
-          {/* Background Starry Image */}
-          <Image
-            source={require('../../assets/images/my_box.png')}
-            style={[StyleSheet.absoluteFill, { width: '100%', height: '100%', opacity: 0.5 }]}
-            resizeMode="cover"
-          />
+        <GestureHandlerRootView style={{ flex: 1, backgroundColor: 'transparent', justifyContent: 'flex-end' }}>
+          {/* Top spacer (배경 터치 시 닫기 동작 제거) */}
+          <View style={{ flex: 1, width: '100%' }} pointerEvents="none" />
 
-          {/* Header bar */}
-          {(() => {
-            const plant = selectedArchivePlant;
-            const isBloom = selectedArchiveStep === 'bloom';
-            const currentStep = isBloom ? 5 : (typeof selectedArchiveStep === 'number' ? selectedArchiveStep : 1);
-            const stepMandalaData = plant?.stepMandalas?.[currentStep];
-            const diaryEntry = plant?.diaries?.[currentStep];
-            const stepDate = isBloom
-              ? (!plant?.isGrowing ? plant?.date : undefined)
-              : (stepMandalaData?.date || diaryEntry?.date || (!plant?.isGrowing ? plant?.date : undefined));
-
-            return (
-              <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingHorizontal: Spacing.three, paddingTop: Platform.OS === 'ios' ? 50 : Spacing.three, paddingBottom: Spacing.two, borderBottomWidth: 1, borderColor: 'rgba(255, 255, 255, 0.08)' }}>
-                <View style={{ flexDirection: 'row', alignItems: 'baseline', gap: 8 }}>
-                  <ThemedText type="smallBold" style={{ color: '#ddefb7', fontSize: 16, letterSpacing: 1 }}>
-                    {isBloom
-                      ? (isEn() ? 'Completed Flower' : '완개꽃')
-                      : (isEn() ? 'Mindfulness' : '마음챙김')}
-                  </ThemedText>
-                  {!!stepDate && (
-                    <ThemedText type="small" style={{ color: '#9A9FB0', fontSize: 12 }}>
-                      {stepDate}
-                    </ThemedText>
-                  )}
-                </View>
-                <Pressable
-                  onPress={() => setIsArchiveDetailModalOpen(false)}
-                  hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
-                >
-                  <ThemedText style={{ color: '#9A9FB0', fontSize: 20, fontWeight: 'bold' }}>✕</ThemedText>
-                </Pressable>
-              </View>
-            );
-          })()}
-
-          <ScrollView
-            style={{ flex: 1 }}
-            contentContainerStyle={{ paddingHorizontal: Spacing.three, paddingVertical: Spacing.four, alignItems: 'center', gap: 20 }}
-            showsVerticalScrollIndicator={false}
+          {/* Bottom Sheet Container */}
+          <RNAnimated.View
+            style={{
+              width: '100%',
+              height: windowHeight - (Math.max(insets.top, 24) + 185),
+              backgroundColor: '#070b16',
+              borderTopLeftRadius: 28,
+              borderTopRightRadius: 28,
+              borderWidth: 1,
+              borderBottomWidth: 0,
+              borderColor: 'rgba(255, 255, 255, 0.15)',
+              overflow: 'hidden',
+              zIndex: 10,
+              elevation: 16,
+              shadowColor: '#000',
+              shadowOffset: { width: 0, height: -6 },
+              shadowOpacity: 0.5,
+              shadowRadius: 14,
+              transform: [{ translateY: archiveModalPanY }],
+            }}
           >
-            {selectedArchivePlant && (() => {
+            {/* Background Starry Image */}
+            <Image
+              source={require('../../assets/images/my_box.png')}
+              style={[StyleSheet.absoluteFill, { width: '100%', height: '100%', opacity: 0.5 }]}
+              resizeMode="cover"
+            />
+
+            {/* Top Handle Bar Area (RNGH Drag Down & Tap) */}
+            <GestureDetector gesture={archiveHandleGesture}>
+              <View
+                style={{
+                  width: '100%',
+                  height: 44,
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  backgroundColor: 'transparent',
+                }}
+              >
+                <View
+                  style={{
+                    width: 50,
+                    height: 5,
+                    borderRadius: 2.5,
+                    backgroundColor: 'rgba(255, 255, 255, 0.5)',
+                  }}
+                />
+              </View>
+            </GestureDetector>
+
+            {/* Header bar: Title & Date (Left), Close ✕ Button (Right) */}
+            {(() => {
               const plant = selectedArchivePlant;
               const isBloom = selectedArchiveStep === 'bloom';
               const currentStep = isBloom ? 5 : (typeof selectedArchiveStep === 'number' ? selectedArchiveStep : 1);
-              const diaryEntry: DiaryEntry | undefined = plant.diaries?.[currentStep];
-
-              const dominantColor = plant.colors?.[currentStep - 1] || (
-                plant.type === 'red' ? '#ef4444' :
-                  plant.type === 'yellow' ? '#FFB86C' :
-                    plant.type === 'blue' ? '#8BE9FD' :
-                      plant.type === 'purple' ? '#BD93F9' :
-                        '#9DBA7D'
-              );
-
-              const stepMandalaData = plant.stepMandalas?.[currentStep];
-              const stepTemplateId = stepMandalaData?.templateId || plant.templateId;
-              const stepMandalaColors = stepMandalaData?.mandalaColors || (plant.isGrowing && Object.keys(state.mandalaColors || {}).length > 0 ? state.mandalaColors : undefined);
-              const stepPaperTexture = (stepMandalaData?.paperTexture || (plant.isGrowing ? paperTexture : undefined) || 'cotton') as PaperTextureType;
-              const stepCottonColor = (stepMandalaData?.cottonColor || (plant.isGrowing ? cottonColor : undefined) || 'cream') as CottonColorType;
+              const stepMandalaData = plant?.stepMandalas?.[currentStep];
+              const diaryEntry = plant?.diaries?.[currentStep];
+              const stepDate = isBloom
+                ? (!plant?.isGrowing ? plant?.date : undefined)
+                : (stepMandalaData?.date || diaryEntry?.date || (!plant?.isGrowing ? plant?.date : undefined));
 
               return (
-                <>
-                  {/* 1. 완개꽃 (Full Bloom Flower) 또는 1~5단계 만다라 도안 */}
-                  {isBloom ? (
-                    <View
-                      ref={archiveCardRef}
-                      collapsable={false}
-                      style={[styles.reflectionCard, { overflow: 'hidden', width: '100%', maxWidth: 440, alignSelf: 'center', marginHorizontal: 0 }]}
-                    >
-                      {/* Background mandala art glow overlay: done.png */}
-                      <View style={[StyleSheet.absoluteFill, { backgroundColor: '#060a14', justifyContent: 'center', alignItems: 'center' }]}>
-                        <Image
-                          source={require('../../assets/images/done.png')}
-                          style={{ width: '100%', height: '100%' }}
-                          resizeMode="cover"
-                        />
-                      </View>
+                <View style={{
+                  flexDirection: 'row',
+                  justifyContent: 'space-between',
+                  alignItems: 'center',
+                  paddingHorizontal: Spacing.three,
+                  paddingBottom: Spacing.two,
+                  borderBottomWidth: 1,
+                  borderColor: 'rgba(255, 255, 255, 0.08)'
+                }}>
+                  <View style={{ flexDirection: 'row', alignItems: 'baseline', gap: 8 }}>
+                    <ThemedText type="smallBold" style={{ color: '#ddefb7', fontSize: 16, letterSpacing: 1 }}>
+                      {isBloom
+                        ? (isEn() ? 'Completed Flower' : '완개꽃')
+                        : (isEn() ? 'Mindfulness' : '마음챙김')}
+                    </ThemedText>
+                    {!!stepDate && (
+                      <ThemedText type="small" style={{ color: '#9A9FB0', fontSize: 12 }}>
+                        {stepDate}
+                      </ThemedText>
+                    )}
+                  </View>
+                  <Pressable
+                    onPress={closeArchiveModal}
+                    hitSlop={{ top: 16, bottom: 16, left: 16, right: 16 }}
+                    style={{ padding: 4 }}
+                  >
+                    <ThemedText style={{ color: '#9A9FB0', fontSize: 20, fontWeight: 'bold' }}>✕</ThemedText>
+                  </Pressable>
+                </View>
+              );
+            })()}
 
-                      <View style={[styles.cardBody, { paddingTop: 28, paddingBottom: 10, paddingHorizontal: 20, alignItems: 'center', justifyContent: 'space-between', flex: 1, minHeight: 430 }]}>
-                        {/* Plant name tag badge */}
-                        <View style={[styles.cardPlantTag, styles.cardPlantTagLv5, { marginTop: 0, marginBottom: 0 }]}>
-                          <ThemedText type="smallBold" style={[styles.cardPlantTagText, styles.cardPlantTagTextLv5]}>
-                            {plant.name}
-                          </ThemedText>
-                        </View>
+            <ScrollView
+              style={{ flex: 1 }}
+              contentContainerStyle={{
+                paddingHorizontal: Spacing.three,
+                paddingTop: Spacing.three,
+                paddingBottom: Math.max(insets.bottom, 20) + 24,
+                alignItems: 'center',
+                gap: 20
+              }}
+              showsVerticalScrollIndicator={false}
+              bounces={true}
+            >
+              {selectedArchivePlant && (() => {
+                const plant = selectedArchivePlant;
+                const isBloom = selectedArchiveStep === 'bloom';
+                const currentStep = isBloom ? 5 : (typeof selectedArchiveStep === 'number' ? selectedArchiveStep : 1);
+                const diaryEntry: DiaryEntry | undefined = plant.diaries?.[currentStep];
 
-                        {/* Centered glowing blossom and sparkles */}
-                        <View style={{ width: 140, height: 140, justifyContent: 'center', alignItems: 'center', marginVertical: 16, position: 'relative', transform: [{ scale: 1.15 }] }}>
-                          <Image
-                            source={require('../../assets/images/flow_body.png')}
-                            style={{ width: 140, height: 140, position: 'absolute', transform: [{ translateY: 24 }] }}
-                            resizeMode="contain"
-                          />
-                          <GlowingBlossom
-                            type={plant.type || 'yellow'}
-                            color={dominantColor}
-                            colors={plant.colors}
-                          />
-                          <Lv5GlowCircle left={45} top={5} color="#FFF275" delay={0} />
-                          <Lv5GlowCircle left={70} top={-2} color="#FF7E5F" delay={400} />
-                          <Lv5GlowCircle left={95} top={5} color="#8BE9FD" delay={800} />
+                const dominantColor = plant.colors?.[currentStep - 1] || (
+                  plant.type === 'red' ? '#ef4444' :
+                    plant.type === 'yellow' ? '#FFB86C' :
+                      plant.type === 'blue' ? '#8BE9FD' :
+                        plant.type === 'purple' ? '#BD93F9' :
+                          '#9DBA7D'
+                );
 
-                          <FloatingCardSparkle id={101} left={10} top={12} size={5} />
-                          <FloatingCardSparkle id={102} left={115} top={8} size={4} />
-                          <FloatingCardSparkle id={103} left={5} top={60} size={6} />
-                          <FloatingCardSparkle id={104} left={122} top={65} size={5} />
-                          <FloatingCardSparkle id={105} left={25} top={85} size={4} />
-                          <FloatingCardSparkle id={106} left={105} top={90} size={6} />
-                        </View>
+                const stepMandalaData = plant.stepMandalas?.[currentStep];
+                const stepTemplateId = stepMandalaData?.templateId || plant.templateId;
+                const stepMandalaColors = stepMandalaData?.mandalaColors || (plant.isGrowing && Object.keys(state.mandalaColors || {}).length > 0 ? state.mandalaColors : undefined);
+                const stepPaperTexture = (stepMandalaData?.paperTexture || (plant.isGrowing ? paperTexture : undefined) || 'cotton') as PaperTextureType;
+                const stepCottonColor = (stepMandalaData?.cottonColor || (plant.isGrowing ? cottonColor : undefined) || 'cream') as CottonColorType;
 
-                        {/* Card message / flower desc */}
-                        <View style={[styles.cardMessageBox, { marginTop: 0, marginBottom: 4, transform: [{ translateY: -44 }] }]}>
-                          <ThemedText
-                            type="default"
-                            style={[
-                              styles.cardMessage,
-                              styles.cardMessageLv5,
-                              { wordBreak: 'keep-all' } as any
-                            ]}
-                            lineBreakStrategyIOS="hangul-word"
-                          >
-                            &quot;{plant.desc}&quot;
-                          </ThemedText>
-                        </View>
-                      </View>
-                    </View>
-                  ) : (
-                    /* Mandala Card Frame matching user mockup */
-                    <View
-                      style={{
-                        width: '100%',
-                        maxWidth: 440,
-                        backgroundColor: 'rgba(13, 16, 13, 0.65)',
-                        borderRadius: 24,
-                        borderWidth: 1,
-                        borderColor: '#374229',
-                        paddingHorizontal: 20,
-                        paddingVertical: 24,
-                        alignItems: 'center',
-                        alignSelf: 'center',
-                        position: 'relative'
-                      }}
-                    >
-                      {/* Mandala Canvas Artwork */}
+                return (
+                  <>
+                    {/* 1. 완개꽃 (Full Bloom Flower) 또는 1~5단계 만다라 도안 */}
+                    {isBloom ? (
                       <View
-                        ref={archiveMandalaRef}
+                        ref={archiveCardRef}
                         collapsable={false}
-                        style={{ alignItems: 'center', justifyContent: 'center' }}
+                        style={[styles.reflectionCard, { overflow: 'hidden', width: '100%', maxWidth: 440, alignSelf: 'center', marginHorizontal: 0 }]}
                       >
-                        <MandalaCanvasArtwork
-                          templateId={stepTemplateId}
-                          colors={plant.colors}
-                          mandalaColors={stepMandalaColors}
-                          paperTexture={stepPaperTexture}
-                          cottonColor={stepCottonColor}
-                          step={currentStep}
-                          size={Math.min(currentCanvasSize, 280)}
-                          interactive={false}
-                        />
-                      </View>
-
-                      {/* Floating Circular Share Button at Bottom-Right (hidden during export) */}
-                      {!isExportingArchiveCard && (
-                        <Pressable
-                          onPress={handleExportArchiveCard}
-                          style={({ pressed }) => [{
-                            position: 'absolute',
-                            bottom: 14,
-                            right: 14,
-                            zIndex: 50,
-                            width: 36,
-                            height: 36,
-                            borderRadius: 18,
-                            alignItems: 'center',
-                            justifyContent: 'center',
-                            backgroundColor: 'rgba(15, 20, 32, 0.85)',
-                            borderWidth: 1,
-                            borderColor: 'rgba(255, 234, 167, 0.35)',
-                            shadowColor: '#000',
-                            shadowOffset: { width: 0, height: 2 },
-                            shadowOpacity: 0.35,
-                            shadowRadius: 4,
-                            elevation: 5,
-                          }, pressed && { opacity: 0.7, transform: [{ scale: 0.95 }] }]}
-                        >
+                        {/* Background mandala art glow overlay: done.png */}
+                        <View style={[StyleSheet.absoluteFill, { backgroundColor: '#060a14', justifyContent: 'center', alignItems: 'center' }]}>
                           <Image
-                            source={require('../../assets/images/ic_share.png')}
+                            source={require('../../assets/images/done.png')}
+                            style={{ width: '100%', height: '100%' }}
+                            resizeMode="cover"
+                          />
+                        </View>
+
+                        <View style={[styles.cardBody, { paddingTop: 28, paddingBottom: 10, paddingHorizontal: 20, alignItems: 'center', justifyContent: 'space-between', flex: 1, minHeight: 430 }]}>
+                          {/* Plant name tag badge */}
+                          <View style={[styles.cardPlantTag, styles.cardPlantTagLv5, { marginTop: 0, marginBottom: 0 }]}>
+                            <ThemedText type="smallBold" style={[styles.cardPlantTagText, styles.cardPlantTagTextLv5]}>
+                              {plant.name}
+                            </ThemedText>
+                          </View>
+
+                          {/* Centered glowing blossom and sparkles */}
+                          <View style={{ width: 140, height: 140, justifyContent: 'center', alignItems: 'center', marginVertical: 16, position: 'relative', transform: [{ scale: 1.15 }] }}>
+                            <Image
+                              source={require('../../assets/images/flow_body.png')}
+                              style={{ width: 140, height: 140, position: 'absolute', transform: [{ translateY: 24 }] }}
+                              resizeMode="contain"
+                            />
+                            <GlowingBlossom
+                              type={plant.type || 'yellow'}
+                              color={dominantColor}
+                              colors={plant.colors}
+                            />
+                            <Lv5GlowCircle left={45} top={5} color="#FFF275" delay={0} />
+                            <Lv5GlowCircle left={70} top={-2} color="#FF7E5F" delay={400} />
+                            <Lv5GlowCircle left={95} top={5} color="#8BE9FD" delay={800} />
+
+                            <FloatingCardSparkle id={101} left={10} top={12} size={5} />
+                            <FloatingCardSparkle id={102} left={115} top={8} size={4} />
+                            <FloatingCardSparkle id={103} left={5} top={60} size={6} />
+                            <FloatingCardSparkle id={104} left={122} top={65} size={5} />
+                            <FloatingCardSparkle id={105} left={25} top={85} size={4} />
+                            <FloatingCardSparkle id={106} left={105} top={90} size={6} />
+                          </View>
+
+                          {/* Card message / flower desc */}
+                          <View style={[styles.cardMessageBox, { marginTop: 0, marginBottom: 4, transform: [{ translateY: -44 }] }]}>
+                            <ThemedText
+                              type="default"
+                              style={[
+                                styles.cardMessage,
+                                styles.cardMessageLv5,
+                                { wordBreak: 'keep-all' } as any
+                              ]}
+                              lineBreakStrategyIOS="hangul-word"
+                            >
+                              &quot;{plant.desc}&quot;
+                            </ThemedText>
+                          </View>
+                        </View>
+                      </View>
+                    ) : (
+                      /* Mandala Card Frame matching user mockup */
+                      <View
+                        style={{
+                          width: '100%',
+                          maxWidth: 440,
+                          backgroundColor: 'rgba(13, 16, 13, 0.65)',
+                          borderRadius: 24,
+                          borderWidth: 1,
+                          borderColor: '#374229',
+                          paddingHorizontal: 20,
+                          paddingVertical: 24,
+                          alignItems: 'center',
+                          alignSelf: 'center',
+                          position: 'relative'
+                        }}
+                      >
+                        {/* Mandala Canvas Artwork */}
+                        <View
+                          ref={archiveMandalaRef}
+                          collapsable={false}
+                          style={{ alignItems: 'center', justifyContent: 'center' }}
+                        >
+                          <MandalaCanvasArtwork
+                            templateId={stepTemplateId}
+                            colors={plant.colors}
+                            mandalaColors={stepMandalaColors}
+                            paperTexture={stepPaperTexture}
+                            cottonColor={stepCottonColor}
+                            step={currentStep}
+                            size={Math.min(currentCanvasSize, 280)}
+                            interactive={false}
+                          />
+                        </View>
+
+                        {/* Floating Circular Share Button at Bottom-Right (hidden during export) */}
+                        {!isExportingArchiveCard && (
+                          <Pressable
+                            onPress={handleExportArchiveCard}
+                            style={({ pressed }) => [{
+                              position: 'absolute',
+                              bottom: 14,
+                              right: 14,
+                              zIndex: 50,
+                              width: 36,
+                              height: 36,
+                              borderRadius: 18,
+                              alignItems: 'center',
+                              justifyContent: 'center',
+                              backgroundColor: 'rgba(15, 20, 32, 0.85)',
+                              borderWidth: 1,
+                              borderColor: 'rgba(255, 234, 167, 0.35)',
+                              shadowColor: '#000',
+                              shadowOffset: { width: 0, height: 2 },
+                              shadowOpacity: 0.35,
+                              shadowRadius: 4,
+                              elevation: 5,
+                            }, pressed && { opacity: 0.7, transform: [{ scale: 0.95 }] }]}
+                          >
+                            <Image
+                              source={require('../../assets/images/ic_share.png')}
+                              style={{ width: 18, height: 18 }}
+                              resizeMode="contain"
+                            />
+                          </Pressable>
+                        )}
+                      </View>
+                    )}
+
+                    {/* 2. 완개꽃일 때의 공유하기 버튼 */}
+                    {isBloom && (
+                      <Pressable
+                        onPress={handleExportArchiveCard}
+                        style={({ pressed }) => [
+                          styles.bookButton,
+                          { width: '100%', maxWidth: 440, justifyContent: 'center', gap: 8, paddingVertical: 14 },
+                          pressed && { opacity: 0.85, transform: [{ scale: 0.98 }] }
+                        ]}
+                      >
+                        <Image
+                          source={require('../../assets/images/ic_share.png')}
+                          style={{ width: 22, height: 22 }}
+                          resizeMode="contain"
+                        />
+                        <ThemedText type="smallBold" style={[
+                          styles.bookButtonText,
+                          { fontSize: 14, fontWeight: 'bold' },
+                          isEn() && { lineHeight: 15 }
+                        ]}>
+                          {isEn() ? 'Share Completed Flower' : '완개꽃 공유하기'}
+                        </ThemedText>
+                      </Pressable>
+                    )}
+
+                    {/* 3. 마음일기 섹션 (만다라 도안일 때만) */}
+                    {!isBloom && (
+                      <View style={{ width: '100%', maxWidth: 440, gap: 10, marginTop: 4 }}>
+                        {/* Section Header: ic_write.png + 마음일기 */}
+                        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 2 }}>
+                          <Image
+                            source={require('../../assets/images/ic_write.png')}
                             style={{ width: 18, height: 18 }}
                             resizeMode="contain"
                           />
-                        </Pressable>
-                      )}
-                    </View>
-                  )}
-
-                  {/* 2. 완개꽃일 때의 공유하기 버튼 */}
-                  {isBloom && (
-                    <Pressable
-                      onPress={handleExportArchiveCard}
-                      style={({ pressed }) => [
-                        styles.bookButton,
-                        { width: '100%', maxWidth: 440, justifyContent: 'center', gap: 8, paddingVertical: 14 },
-                        pressed && { opacity: 0.85, transform: [{ scale: 0.98 }] }
-                      ]}
-                    >
-                      <Image
-                        source={require('../../assets/images/ic_share.png')}
-                        style={{ width: 22, height: 22 }}
-                        resizeMode="contain"
-                      />
-                      <ThemedText type="smallBold" style={[
-                        styles.bookButtonText,
-                        { fontSize: 14, fontWeight: 'bold' },
-                        isEn() && { lineHeight: 15 }
-                      ]}>
-                        {isEn() ? 'Share Completed Flower' : '완개꽃 공유하기'}
-                      </ThemedText>
-                    </Pressable>
-                  )}
-
-                  {/* 3. 마음일기 섹션 (만다라 도안일 때만) */}
-                  {!isBloom && (
-                    <View style={{ width: '100%', maxWidth: 440, gap: 10, marginTop: 4 }}>
-                      {/* Section Header: ic_write.png + 마음일기 */}
-                      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 2 }}>
-                        <Image
-                          source={require('../../assets/images/ic_write.png')}
-                          style={{ width: 18, height: 18 }}
-                          resizeMode="contain"
-                        />
-                        <ThemedText type="smallBold" style={{ color: '#ddefb7', fontSize: 15, fontWeight: 'bold' }}>
-                          {t('diary.modal_title')}
-                        </ThemedText>
-                      </View>
-
-                      {/* Diary Card Box */}
-                      <View style={{
-                        backgroundColor: 'rgba(13, 16, 13, 0.65)',
-                        borderRadius: 24,
-                        borderWidth: 1,
-                        borderColor: '#374229',
-                        paddingHorizontal: 20,
-                        paddingVertical: 18,
-                        gap: 12
-                      }}>
-                        {/* Question Row */}
-                        <View style={{ flexDirection: 'row', alignItems: 'flex-start' }}>
-                          <ThemedText style={{ color: '#FFEAA7', fontSize: 13, lineHeight: 20, flexShrink: 1, fontWeight: '600' }}>
-                            {diaryEntry ? diaryEntry.question.replace(/^[^\w\s가-힣]+\s*/, '') : (isEn() ? "No reflection question." : "오늘의 마음을 가만히 들여다보세요.")}
+                          <ThemedText type="smallBold" style={{ color: '#ddefb7', fontSize: 15, fontWeight: 'bold' }}>
+                            {t('diary.modal_title')}
                           </ThemedText>
                         </View>
 
-                        {/* Diary Content Text */}
-                        {diaryEntry ? (
-                          <ThemedText style={{ color: '#ffffff', fontSize: 13, lineHeight: 22, textAlign: 'left' }}>
-                            {diaryEntry.content}
-                          </ThemedText>
-                        ) : (
-                          <View style={{ paddingVertical: 12, alignItems: 'center' }}>
-                            <ThemedText type="smallBold" style={{ color: '#9A9FB0', fontSize: 13, textAlign: 'center' }}>
-                              {t('diary.empty_diary')}
-                            </ThemedText>
-                            <ThemedText type="small" style={{ color: 'rgba(154, 159, 176, 0.5)', fontSize: 11, marginTop: 4, textAlign: 'center' }}>
-                              {t('diary.empty_diary_desc')}
+                        {/* Diary Card Box */}
+                        <View style={{
+                          backgroundColor: 'rgba(13, 16, 13, 0.65)',
+                          borderRadius: 24,
+                          borderWidth: 1,
+                          borderColor: '#374229',
+                          paddingHorizontal: 20,
+                          paddingVertical: 18,
+                          gap: 12
+                        }}>
+                          {/* Question Row */}
+                          <View style={{ flexDirection: 'row', alignItems: 'flex-start' }}>
+                            <ThemedText style={{ color: '#FFEAA7', fontSize: 13, lineHeight: 20, flexShrink: 1, fontWeight: '600' }}>
+                              {diaryEntry ? diaryEntry.question.replace(/^[^\w\s가-힣]+\s*/, '') : (isEn() ? "No reflection question." : "오늘의 마음을 가만히 들여다보세요.")}
                             </ThemedText>
                           </View>
-                        )}
-                      </View>
-                    </View>
-                  )}
-                </>
-              );
-            })()}
-          </ScrollView>
 
-          {/* Bottom Close Button */}
-          <View style={{ paddingHorizontal: Spacing.three, paddingBottom: Platform.OS === 'ios' ? 34 : Spacing.three, paddingTop: Spacing.two, backgroundColor: 'transparent' }}>
-            <Pressable
-              style={({ pressed }) => [
-                styles.modalOkBtnFull,
-                pressed && { opacity: 0.85, transform: [{ scale: 0.99 }] }
-              ]}
-              onPress={() => setIsArchiveDetailModalOpen(false)}
-            >
-              <ThemedText style={[styles.modalOkText, { fontWeight: 'bold' }]}>{t('common.close')}</ThemedText>
-            </Pressable>
-          </View>
-        </View>
+                          {/* Diary Content Text */}
+                          {diaryEntry ? (
+                            <ThemedText style={{ color: '#ffffff', fontSize: 13, lineHeight: 22, textAlign: 'left' }}>
+                              {diaryEntry.content}
+                            </ThemedText>
+                          ) : (
+                            <View style={{ paddingVertical: 12, alignItems: 'center' }}>
+                              <ThemedText type="smallBold" style={{ color: '#9A9FB0', fontSize: 13, textAlign: 'center' }}>
+                                {t('diary.empty_diary')}
+                              </ThemedText>
+                              <ThemedText type="small" style={{ color: 'rgba(154, 159, 176, 0.5)', fontSize: 11, marginTop: 4, textAlign: 'center' }}>
+                                {t('diary.empty_diary_desc')}
+                              </ThemedText>
+                            </View>
+                          )}
+                        </View>
+                      </View>
+                    )}
+                  </>
+                );
+              })()}
+            </ScrollView>
+          </RNAnimated.View>
+        </GestureHandlerRootView>
       </Modal>
 
       {/* SETTINGS MODAL */}
