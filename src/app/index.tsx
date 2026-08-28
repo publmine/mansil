@@ -32,6 +32,7 @@ import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { ZoomableCanvas, ZoomableCanvasRef } from '@/components/ZoomableCanvas';
 import { HealingColor, STEP_DETAILS_JSON, getHealingColors, getStepDetailsForSeason, getTemplateById, isEn } from '@/constants/healing-data';
+import { MandalaShape } from '@/constants/mandala-templates';
 import { COTTON_COLORS, CottonColorType, PAPER_TEXTURES, PaperTextureType } from '@/constants/paper-textures';
 import { MaxContentWidth, Spacing } from '@/constants/theme';
 import { ArchivedPlant, DiaryEntry, useGame } from '@/context/GameContext';
@@ -1359,6 +1360,364 @@ const MiniBlossomLogo: React.FC<MiniBlossomLogoProps> = ({ size = 24, style }) =
   );
 };
 
+interface MandalaCanvasArtworkProps {
+  templateId?: string;
+  colors?: string[];
+  mandalaColors?: { [shapeId: string]: string };
+  paperTexture?: PaperTextureType;
+  cottonColor?: CottonColorType;
+  paperTheme?: any;
+  step?: number;
+  size?: number;
+  interactive?: boolean;
+  onSegmentClick?: (segmentId: string) => void;
+}
+
+const MandalaCanvasArtwork: React.FC<MandalaCanvasArtworkProps> = React.memo(({
+  templateId = 'flower_1',
+  colors = [],
+  mandalaColors = {},
+  paperTexture = 'cotton',
+  cottonColor = 'cream',
+  paperTheme,
+  step = 1,
+  size = 300,
+  interactive = false,
+  onSegmentClick,
+}) => {
+  const template = getTemplateById(templateId || 'flower_1');
+  const activePaperTexture = paperTexture || 'cotton';
+  const activeCottonColor = cottonColor || 'cream';
+  const isDarkPaper = activePaperTexture === 'cotton' && activeCottonColor === 'black';
+
+  const dominantColor = (colors && colors[step - 1]) || (colors && colors[0]) || '#BD93F9';
+  const palette = (colors && colors.length > 0) ? colors : [dominantColor, '#8BE9FD', '#BD93F9', '#FFB86C', '#9DBA7D'];
+  const hasCustomColors = !!(mandalaColors && Object.keys(mandalaColors).length > 0);
+
+  const getShapeFill = (shape: MandalaShape, idx: number) => {
+    const isOutline = shape.id.toLowerCase().includes('outline');
+    if (isOutline) return isDarkPaper ? '#FFFFFF' : '#000000';
+    if (hasCustomColors) {
+      return mandalaColors[shape.id] || currentTheme.uncoloredFill;
+    }
+    if (!interactive) {
+      const colorIdx = idx % palette.length;
+      return idx % 2 === 0 ? dominantColor : palette[colorIdx];
+    }
+    return currentTheme.uncoloredFill;
+  };
+
+  const basePaperTheme = paperTheme || PAPER_TEXTURES[activePaperTexture] || PAPER_TEXTURES.cotton;
+  const currentTheme = activePaperTexture === 'cotton'
+    ? {
+      ...basePaperTheme,
+      image: isDarkPaper ? null : basePaperTheme.image,
+      backgroundColor: COTTON_COLORS[activeCottonColor]?.backgroundColor || (isDarkPaper ? '#18181B' : '#FAF8F5'),
+      uncoloredFill: COTTON_COLORS[activeCottonColor]?.uncoloredFill || (isDarkPaper ? '#18181B' : '#FAF8F5'),
+      lineStroke: COTTON_COLORS[activeCottonColor]?.lineStroke || (isDarkPaper ? '#E4E4E7' : '#3c4c73'),
+      guidelineStroke: COTTON_COLORS[activeCottonColor]?.guidelineStroke || (isDarkPaper ? '#52525B' : '#D1D5DB'),
+      guidelineOpacity: COTTON_COLORS[activeCottonColor]?.guidelineOpacity || 0.8,
+    }
+    : basePaperTheme;
+
+  const sortedShapes = [...template.shapes]
+    .filter((shape) => {
+      if (shape.d) {
+        const d = shape.d;
+        // Filter out outer square canvas background subpaths (Peony, Flower SVG outer rect paths)
+        if (
+          d.startsWith("M0.") ||
+          d.startsWith("M0,") ||
+          d.startsWith("M0 ") ||
+          d.includes("c0-68.549") ||
+          d.includes("c69.889,0") ||
+          d.includes("205.646") ||
+          d.includes("209.665") ||
+          d.includes("210.67") ||
+          d.includes("356.229") ||
+          d.includes("c70,0,140,0,210,0")
+        ) {
+          return false;
+        }
+      }
+      return true;
+    })
+    .sort((a, b) => {
+      const aIsBorder = a.id.toLowerCase().includes("border") || a.id.toLowerCase().includes("outer") || (a.type === 'circle' && (a.r || 0) > 80);
+      const bIsBorder = b.id.toLowerCase().includes("border") || b.id.toLowerCase().includes("outer") || (b.type === 'circle' && (b.r || 0) > 80);
+      if (aIsBorder && !bIsBorder) return -1;
+      if (!aIsBorder && bIsBorder) return 1;
+      return 0;
+    });
+
+  const clipId = `mCanvasClip_${(template.id || 't1').replace(/[^a-zA-Z0-9]/g, '')}_${size}_${interactive ? 'edit' : 'view'}`;
+
+  return (
+    <View
+      style={[
+        styles.canvasBorder,
+        {
+          width: size,
+          height: size,
+          borderRadius: size / 2,
+          position: 'relative',
+          overflow: 'hidden',
+          backgroundColor: isDarkPaper ? '#18181B' : (currentTheme.backgroundColor || '#FAF8F5'),
+          borderWidth: 2,
+          borderColor: isDarkPaper ? 'rgba(255, 255, 255, 0.25)' : 'rgba(221, 239, 183, 0.4)',
+        }
+      ]}
+    >
+      {/* 1. Paper Background Base: Solid Color Base */}
+      <View
+        style={[
+          StyleSheet.absoluteFill,
+          {
+            width: size,
+            height: size,
+            borderRadius: size / 2,
+            backgroundColor: isDarkPaper ? '#18181B' : currentTheme.backgroundColor,
+            overflow: 'hidden',
+          },
+        ]}
+      />
+
+      {/* 2. Vector SVG Mandala Paths */}
+      {Platform.OS === 'web' ? (
+        <svg width={size} height={size} viewBox="0 0 200 200" style={{ position: 'relative', zIndex: 2 }}>
+          <defs>
+            <clipPath id={clipId}>
+              <circle cx="100" cy="100" r="98" />
+            </clipPath>
+          </defs>
+
+          {/* Outer circle guideline */}
+          <circle
+            cx="100"
+            cy="100"
+            r="98"
+            fill="none"
+            stroke={currentTheme.guidelineStroke || '#BDC3C7'}
+            strokeWidth="1.5"
+            strokeDasharray="4 4"
+            opacity={currentTheme.guidelineOpacity || 0.6}
+          />
+
+          {/* Clipped Mandala Content */}
+          <g clipPath={`url(#${clipId})`}>
+            {/* 1. Interactive / Rendered Fill Layer */}
+            {sortedShapes.map((shape, idx) => {
+              const isOutline = shape.id.toLowerCase().includes('outline');
+              const isNotouch = shape.id.toLowerCase().includes('notouch');
+              const fill = getShapeFill(shape, idx);
+              const notClickable = !interactive || isOutline || isNotouch;
+
+              if (shape.type === 'circle') {
+                return (
+                  <circle
+                    key={shape.id}
+                    cx={shape.cx}
+                    cy={shape.cy}
+                    r={shape.r}
+                    fill={fill}
+                    stroke={fill}
+                    strokeWidth="1.8"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    style={{ cursor: notClickable ? 'default' : 'pointer' }}
+                    onClick={() => interactive && !notClickable && onSegmentClick && onSegmentClick(shape.id)}
+                  />
+                );
+              } else {
+                return (
+                  <path
+                    key={shape.id}
+                    d={shape.d}
+                    transform={shape.transform}
+                    fill={fill}
+                    stroke={fill}
+                    strokeWidth="1.8"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    style={{ cursor: notClickable ? 'default' : 'pointer' }}
+                    onClick={() => interactive && !notClickable && onSegmentClick && onSegmentClick(shape.id)}
+                  />
+                );
+              }
+            })}
+
+            {/* 2. Ultra-Thin 0.5px Crisp Paper Ink Stroke Line Overlay Layer */}
+            <g style={{ pointerEvents: 'none', opacity: 0.9 }}>
+              {sortedShapes.map((shape) => {
+                const isOutline = shape.id.toLowerCase().includes('outline');
+                if (isOutline) return null;
+                const strokeColor = currentTheme.lineStroke || '#333333';
+                if (shape.type === 'circle') {
+                  return (
+                    <circle
+                      key={`line_${shape.id}`}
+                      cx={shape.cx}
+                      cy={shape.cy}
+                      r={shape.r}
+                      fill="none"
+                      stroke={strokeColor}
+                      strokeWidth="0.5"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                    />
+                  );
+                } else {
+                  return (
+                    <path
+                      key={`line_${shape.id}`}
+                      d={shape.d}
+                      transform={shape.transform}
+                      fill="none"
+                      stroke={strokeColor}
+                      strokeWidth="0.5"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                    />
+                  );
+                }
+              })}
+            </g>
+          </g>
+        </svg>
+      ) : (
+        <Svg width={size} height={size} viewBox="0 0 200 200" style={{ position: 'relative', zIndex: 2 }}>
+          <Defs>
+            <ClipPath id={clipId}>
+              <Circle cx="100" cy="100" r={98} />
+            </ClipPath>
+          </Defs>
+
+          {/* Outer circle guideline */}
+          <Circle
+            cx="100"
+            cy="100"
+            r={98}
+            fill="none"
+            stroke={currentTheme.guidelineStroke || '#BDC3C7'}
+            strokeWidth={1.5}
+            strokeDasharray="4 4"
+            opacity={currentTheme.guidelineOpacity || 0.6}
+          />
+
+          <G clipPath={`url(#${clipId})`}>
+            {/* 1. Fill Layer */}
+            {sortedShapes.map((shape, idx) => {
+              const isOutline = shape.id.toLowerCase().includes('outline');
+              const isNotouch = shape.id.toLowerCase().includes('notouch');
+              const fill = getShapeFill(shape, idx);
+              const notClickable = !interactive || isOutline || isNotouch;
+
+              if (shape.type === 'circle') {
+                return (
+                  <Circle
+                    key={shape.id}
+                    cx={shape.cx}
+                    cy={shape.cy}
+                    r={shape.r}
+                    fill={fill}
+                    stroke={fill}
+                    strokeWidth={1.8}
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    onPress={() => interactive && !notClickable && onSegmentClick && onSegmentClick(shape.id)}
+                  />
+                );
+              } else {
+                return (
+                  <Path
+                    key={shape.id}
+                    d={shape.d}
+                    transform={shape.transform}
+                    fill={fill}
+                    stroke={fill}
+                    strokeWidth={1.8}
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    onPress={() => interactive && !notClickable && onSegmentClick && onSegmentClick(shape.id)}
+                  />
+                );
+              }
+            })}
+
+            {/* 2. Ink Stroke Line Overlay Layer */}
+            <G opacity={0.9}>
+              {sortedShapes.map((shape) => {
+                const isOutline = shape.id.toLowerCase().includes('outline');
+                if (isOutline) return null;
+                const strokeColor = currentTheme.lineStroke || '#333333';
+                if (shape.type === 'circle') {
+                  return (
+                    <Circle
+                      key={`line_${shape.id}`}
+                      cx={shape.cx}
+                      cy={shape.cy}
+                      r={shape.r}
+                      fill="none"
+                      stroke={strokeColor}
+                      strokeWidth={0.5}
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      pointerEvents="none"
+                    />
+                  );
+                } else {
+                  return (
+                    <Path
+                      key={`line_${shape.id}`}
+                      d={shape.d}
+                      transform={shape.transform}
+                      fill="none"
+                      stroke={strokeColor}
+                      strokeWidth={0.5}
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      pointerEvents="none"
+                    />
+                  );
+                }
+              })}
+            </G>
+          </G>
+        </Svg>
+      )}
+
+      {/* 3. Top Paper Texture Overlay Layer */}
+      {!isDarkPaper && currentTheme.image && (
+        <View
+          pointerEvents="none"
+          style={[
+            StyleSheet.absoluteFill,
+            {
+              width: size,
+              height: size,
+              borderRadius: size / 2,
+              overflow: 'hidden',
+              opacity: activePaperTexture === 'cotton' ? (Platform.OS === 'web' ? 0.15 : 0.08) : (Platform.OS === 'web' ? 0.72 : 0.28),
+              ...(Platform.OS === 'web' ? { mixBlendMode: 'multiply' } : {}),
+              zIndex: 10,
+            },
+          ]}
+        >
+          <Image
+            source={currentTheme.image}
+            style={{
+              width: size,
+              height: size,
+              borderRadius: size / 2,
+            }}
+            resizeMode="cover"
+          />
+        </View>
+      )}
+    </View>
+  );
+});
+
 const interpolateColor = (color1: string, color2: string, factor: number): string => {
   const r1 = parseInt(color1.substring(1, 3), 16);
   const g1 = parseInt(color1.substring(3, 5), 16);
@@ -2379,6 +2738,7 @@ export default function HomeScreen() {
   const currentPaperTheme = paperTexture === 'cotton'
     ? {
       ...basePaperTheme,
+      image: cottonColor === 'black' ? null : basePaperTheme.image,
       backgroundColor: COTTON_COLORS[cottonColor].backgroundColor,
       uncoloredFill: COTTON_COLORS[cottonColor].uncoloredFill,
       lineStroke: COTTON_COLORS[cottonColor].lineStroke,
@@ -2495,11 +2855,19 @@ export default function HomeScreen() {
   const [diaryQuestion, setDiaryQuestion] = useState('');
   const [diaryContent, setDiaryContent] = useState('');
 
-  // Diary View Modal States
+  // Diary View Modal States (replaced by Archive Detail Modal)
   const [isDiaryViewModalOpen, setIsDiaryViewModalOpen] = useState(false);
   const [selectedDiary, setSelectedDiary] = useState<DiaryEntry | null>(null);
   const [selectedPlantName, setSelectedPlantName] = useState('');
   const [selectedStepLevel, setSelectedStepLevel] = useState(0);
+
+  // Archive Step & Flower Detail Modal States
+  const [isArchiveDetailModalOpen, setIsArchiveDetailModalOpen] = useState(false);
+  const [selectedArchivePlant, setSelectedArchivePlant] = useState<any | null>(null);
+  const [selectedArchiveStep, setSelectedArchiveStep] = useState<number | 'bloom'>(1);
+  const archiveCardRef = useRef<View>(null);
+  const archiveMandalaRef = useRef<View>(null);
+  const [isExportingArchiveCard, setIsExportingArchiveCard] = useState(false);
 
   // Settings & Seed Donation Modal State
   const [isSettingsModalOpen, setIsSettingsModalOpen] = useState(false);
@@ -2533,6 +2901,13 @@ export default function HomeScreen() {
     writeDiary(activePot.id, currentLevel, diaryQuestion, diaryContent);
     setIsDiaryModalOpen(false);
     playSoundEffect(659.25, 'sine', 0.5);
+  };
+
+  const handleOpenArchiveStepDetail = (plant: any, stepLevel: number | 'bloom') => {
+    setSelectedArchivePlant(plant);
+    setSelectedArchiveStep(stepLevel);
+    setIsArchiveDetailModalOpen(true);
+    playSoundEffect(523.25, 'sine', 0.4);
   };
 
   const handleOpenDiaryViewModal = (plantName: string, level: number, entry: DiaryEntry | undefined) => {
@@ -2638,6 +3013,98 @@ export default function HomeScreen() {
     } catch (error: any) {
       setIsExporting(false);
       console.error('Error sharing card:', error);
+      showModal("error", `카드 내보내기 중 문제가 발생했습니다: ${error.message || error}`);
+    }
+  };
+
+  const handleExportArchiveCard = async () => {
+    if (!selectedArchivePlant) return;
+    try {
+      playSoundEffect(587.33, 'sine', 0.5);
+      setIsExportingArchiveCard(true);
+      await new Promise((resolve) => setTimeout(resolve, 100));
+
+      const isBloom = selectedArchiveStep === 'bloom';
+      const targetRef = isBloom ? archiveCardRef : archiveMandalaRef;
+
+      if (Platform.OS === 'web') {
+        const html2canvas = require('html2canvas');
+        const element = targetRef.current as any;
+        if (!element) {
+          showModal(t('common.error'), t('export.card_area_not_found'));
+          setIsExportingArchiveCard(false);
+          return;
+        }
+
+        const canvas = await html2canvas(element, {
+          useCORS: true,
+          backgroundColor: null,
+          scale: 2,
+        });
+
+        setIsExportingArchiveCard(false);
+        const dataUrl = canvas.toDataURL('image/png');
+
+        let shared = false;
+        if (navigator.share && navigator.canShare) {
+          try {
+            const response = await fetch(dataUrl);
+            const blob = await response.blob();
+            const file = new File([blob], `mind-card-${selectedArchivePlant.name}-step${selectedArchiveStep}.png`, { type: 'image/png' });
+
+            if (navigator.canShare({ files: [file] })) {
+              await navigator.share({
+                files: [file],
+                title: `${selectedArchivePlant.name}`,
+                text: `${selectedArchivePlant.name}`,
+              });
+              shared = true;
+            }
+          } catch (shareError) {
+            console.warn('Web Share failed, falling back to download:', shareError);
+          }
+        }
+
+        if (!shared) {
+          const link = document.createElement('a');
+          link.download = `mind-card-${selectedArchivePlant.name}-step${selectedArchiveStep}.png`;
+          link.href = dataUrl;
+          link.click();
+
+          showModal(
+            t('export.card_title'),
+            t('export.card_downloaded', { name: selectedArchivePlant.name })
+          );
+        }
+      } else {
+        if (!targetRef.current) {
+          showModal(t('common.error'), t('export.card_area_not_found'));
+          setIsExportingArchiveCard(false);
+          return;
+        }
+
+        const uri = await captureRef(targetRef, {
+          format: 'png',
+          quality: 1.0,
+          result: 'tmpfile',
+          snapshotContentContainer: false,
+        });
+
+        setIsExportingArchiveCard(false);
+
+        if (await Sharing.isAvailableAsync()) {
+          await Sharing.shareAsync(uri, {
+            mimeType: 'image/png',
+            dialogTitle: `${selectedArchivePlant.name}`,
+            UTI: 'public.png',
+          });
+        } else {
+          showModal(t('common.notice'), t('export.share_not_supported'));
+        }
+      }
+    } catch (error: any) {
+      setIsExportingArchiveCard(false);
+      console.error('Error sharing archive card:', error);
       showModal("error", `카드 내보내기 중 문제가 발생했습니다: ${error.message || error}`);
     }
   };
@@ -2913,7 +3380,7 @@ export default function HomeScreen() {
   };
 
   const handleCompletePress = () => {
-    const nextScreen = completeColoring();
+    const nextScreen = completeColoring({ paperTexture, cottonColor });
     if (nextScreen) {
       setCurrentScreen(nextScreen);
     }
@@ -2951,6 +3418,29 @@ export default function HomeScreen() {
         <Image source={require('../../assets/images/parchment_texture.jpg')} style={{ width: 1, height: 1 }} />
       </View>
 
+      {/* Universal Full-Bleed Root Background Images */}
+      {currentScreen === 'mansil' && (
+        <Image
+          source={require('../../assets/images/mandar_bg.png')}
+          style={[StyleSheet.absoluteFill, { width: '100%', height: '100%', zIndex: 0 }]}
+          resizeMode="cover"
+        />
+      )}
+      {(currentScreen === 'color-select' || currentScreen === 'coloring' || currentScreen === 'archive') && (
+        <Image
+          source={require('../../assets/images/my_box.png')}
+          style={[StyleSheet.absoluteFill, { width: '100%', height: '100%', zIndex: 0, opacity: 0.5 }]}
+          resizeMode="cover"
+        />
+      )}
+      {(currentScreen === 'sanctuary' || currentScreen === 'mind-card') && (
+        <Image
+          source={require('../../assets/images/mandar_step_bg.png')}
+          style={[StyleSheet.absoluteFill, { width: '100%', height: '100%', zIndex: 0 }]}
+          resizeMode="cover"
+        />
+      )}
+
       <SafeAreaView style={styles.safeArea}>
 
         {/* Header segment */}
@@ -2972,29 +3462,6 @@ export default function HomeScreen() {
 
           {/* Top Right Action Buttons (Always visible like the logo) */}
           <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
-            {/* Share Design button for coloring screen */}
-            {currentScreen === 'coloring' && (
-              <Pressable
-                onPress={handleExportDesign}
-                style={{
-                  width: 32,
-                  height: 32,
-                  borderRadius: 16,
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  backgroundColor: 'rgba(255, 255, 255, 0.08)',
-                  borderWidth: 1,
-                  borderColor: 'rgba(255,234,167,0.3)',
-                }}
-              >
-                <Image
-                  source={require('../../assets/images/ic_share.png')}
-                  style={{ width: 17, height: 17 }}
-                  resizeMode="contain"
-                />
-              </Pressable>
-            )}
-
             {/* Official Cafe Icon - Always visible across all pages */}
             <Pressable
               onPress={() => {
@@ -3687,7 +4154,7 @@ export default function HomeScreen() {
                             key={idx}
                             style={[
                               styles.holeDot,
-                              isOptional && { borderStyle: 'dashed', borderColor: '#4A5543' },
+                              isOptional && { borderStyle: 'dashed', borderColor: '#374229' },
                               item ? { backgroundColor: item.hex, borderColor: item.hex, borderStyle: 'solid' } : { backgroundColor: 'transparent' }
                             ]}
                           />
@@ -3955,271 +4422,303 @@ export default function HomeScreen() {
               </View>
 
               {/* Interactive Vector Mandala Canvas with Pinch-to-Zoom */}
-              <View style={styles.canvasContainer}>
-                <ZoomableCanvas
-                  ref={zoomCanvasRef}
-                  size={currentCanvasSize}
-                  resetKey={activeTemplateId}
-                  canvasRef={designRef}
-                  containerStyle={styles.canvasBorder}
-                >
-                  {/* Paper Background Base: Texture Image or Pure Clean Solid Paper */}
-                  <View
-                    style={[
-                      StyleSheet.absoluteFill,
-                      {
-                        width: currentCanvasSize,
-                        height: currentCanvasSize,
-                        borderRadius: currentCanvasSize / 2,
-                        backgroundColor: currentPaperTheme.backgroundColor,
-                        overflow: 'hidden',
-                      },
-                    ]}
+              <View style={[styles.canvasContainer, { position: 'relative' }]}>
+                <View style={{ width: currentCanvasSize, height: currentCanvasSize, position: 'relative' }}>
+                  <ZoomableCanvas
+                    ref={zoomCanvasRef}
+                    size={currentCanvasSize}
+                    resetKey={activeTemplateId}
+                    canvasRef={designRef}
+                    containerStyle={styles.canvasBorder}
                   >
-                    {currentPaperTheme.image && (
-                      <Image
-                        source={currentPaperTheme.image}
-                        style={{
-                          width: currentCanvasSize,
-                          height: currentCanvasSize,
-                          borderRadius: currentCanvasSize / 2,
-                        }}
-                        resizeMode="cover"
-                      />
-                    )}
-                  </View>
-
-                  {Platform.OS === 'web' ? (
-                    <svg width={currentCanvasSize} height={currentCanvasSize} viewBox="0 0 200 200" style={{ position: 'relative', zIndex: 2 }}>
-                      <defs>
-                        <clipPath id="mandalaCircleClipWeb">
-                          <circle cx="100" cy="100" r="98" />
-                        </clipPath>
-                      </defs>
-
-                      {/* Outer circle guideline */}
-                      <circle
-                        cx="100"
-                        cy="100"
-                        r="98"
-                        fill="none"
-                        stroke={currentPaperTheme.guidelineStroke}
-                        strokeWidth="1.5"
-                        strokeDasharray="4 4"
-                        opacity={currentPaperTheme.guidelineOpacity}
-                      />
-
-                      {/* Clipped Mandala Content - Real Paper Base & Shapes */}
-                      <g clipPath="url(#mandalaCircleClipWeb)">
-                        {/* 1. Interactive Fill Layer (Position gap shifted & sealed with 1.8 stroke) */}
-                        {sortedShapes.map((shape) => {
-                          const isOutline = shape.id.toLowerCase().includes('outline');
-                          const isNotouch = shape.id.toLowerCase().includes('notouch');
-                          const fill = isOutline ? '#000000' : (state.mandalaColors[shape.id] || currentPaperTheme.uncoloredFill);
-                          const notClickable = isOutline || isNotouch;
-                          if (shape.type === 'circle') {
-                            return (
-                              <circle
-                                key={shape.id}
-                                cx={shape.cx}
-                                cy={shape.cy}
-                                r={shape.r}
-                                fill={fill}
-                                stroke={fill}
-                                strokeWidth="1.8"
-                                strokeLinecap="round"
-                                strokeLinejoin="round"
-                                style={{ cursor: notClickable ? 'default' : 'pointer' }}
-                                onClick={() => !notClickable && colorSegment(shape.id)}
-                              />
-                            );
-                          } else {
-                            return (
-                              <path
-                                key={shape.id}
-                                d={shape.d}
-                                transform={shape.transform}
-                                fill={fill}
-                                stroke={fill}
-                                strokeWidth="1.8"
-                                strokeLinecap="round"
-                                strokeLinejoin="round"
-                                style={{ cursor: notClickable ? 'default' : 'pointer' }}
-                                onClick={() => !notClickable && colorSegment(shape.id)}
-                              />
-                            );
-                          }
-                        })}
-
-                        {/* 2. Ultra-Thin 0.5px Crisp Paper Ink Stroke Line Overlay Layer */}
-                        <g style={{ pointerEvents: 'none', opacity: 0.9 }}>
-                          {sortedShapes.map((shape) => {
-                            const isOutline = shape.id.toLowerCase().includes('outline');
-                            if (isOutline) return null;
-                            const strokeColor = currentPaperTheme.lineStroke;
-                            if (shape.type === 'circle') {
-                              return (
-                                <circle
-                                  key={`line_${shape.id}`}
-                                  cx={shape.cx}
-                                  cy={shape.cy}
-                                  r={shape.r}
-                                  fill="none"
-                                  stroke={strokeColor}
-                                  strokeWidth="0.5"
-                                  strokeLinecap="round"
-                                  strokeLinejoin="round"
-                                />
-                              );
-                            } else {
-                              return (
-                                <path
-                                  key={`line_${shape.id}`}
-                                  d={shape.d}
-                                  transform={shape.transform}
-                                  fill="none"
-                                  stroke={strokeColor}
-                                  strokeWidth="0.5"
-                                  strokeLinecap="round"
-                                  strokeLinejoin="round"
-                                />
-                              );
-                            }
-                          })}
-                        </g>
-                      </g>
-                    </svg>
-                  ) : (
-                    <Svg width={currentCanvasSize} height={currentCanvasSize} viewBox="0 0 200 200" style={{ position: 'relative', zIndex: 2 }}>
-                      <Defs>
-                        <ClipPath id="mandalaCircleClipNative">
-                          <Circle cx="100" cy="100" r={98} />
-                        </ClipPath>
-                      </Defs>
-
-                      {/* Outer circle guideline */}
-                      <Circle
-                        cx="100"
-                        cy="100"
-                        r={98}
-                        fill="none"
-                        stroke={currentPaperTheme.guidelineStroke}
-                        strokeWidth={1.5}
-                        strokeDasharray="4 4"
-                        opacity={currentPaperTheme.guidelineOpacity}
-                      />
-
-                      {/* Clipped Mandala Content - Real Paper Base & Shapes */}
-                      <G clipPath="url(#mandalaCircleClipNative)">
-                        {/* 1. Interactive Fill Layer (Position gap shifted & sealed with 1.8 stroke) */}
-                        {sortedShapes.map((shape) => {
-                          const isOutline = shape.id.toLowerCase().includes('outline');
-                          const isNotouch = shape.id.toLowerCase().includes('notouch');
-                          const fill = isOutline ? '#000000' : (state.mandalaColors[shape.id] || currentPaperTheme.uncoloredFill);
-                          const notClickable = isOutline || isNotouch;
-                          if (shape.type === 'circle') {
-                            return (
-                              <Circle
-                                key={shape.id}
-                                cx={shape.cx}
-                                cy={shape.cy}
-                                r={shape.r}
-                                fill={fill}
-                                stroke={fill}
-                                strokeWidth={1.8}
-                                strokeLinecap="round"
-                                strokeLinejoin="round"
-                                onPress={() => !notClickable && colorSegment(shape.id)}
-                              />
-                            );
-                          } else {
-                            return (
-                              <Path
-                                key={shape.id}
-                                d={shape.d}
-                                transform={shape.transform}
-                                fill={fill}
-                                stroke={fill}
-                                strokeWidth={1.8}
-                                strokeLinecap="round"
-                                strokeLinejoin="round"
-                                onPress={() => !notClickable && colorSegment(shape.id)}
-                              />
-                            );
-                          }
-                        })}
-
-                        {/* 2. Ultra-Thin 0.5px Crisp Paper Ink Stroke Line Overlay Layer */}
-                        <G opacity={0.9}>
-                          {sortedShapes.map((shape) => {
-                            const isOutline = shape.id.toLowerCase().includes('outline');
-                            if (isOutline) return null;
-                            const strokeColor = currentPaperTheme.lineStroke;
-                            if (shape.type === 'circle') {
-                              return (
-                                <Circle
-                                  key={`line_${shape.id}`}
-                                  cx={shape.cx}
-                                  cy={shape.cy}
-                                  r={shape.r}
-                                  fill="none"
-                                  stroke={strokeColor}
-                                  strokeWidth={0.5}
-                                  strokeLinecap="round"
-                                  strokeLinejoin="round"
-                                  pointerEvents="none"
-                                />
-                              );
-                            } else {
-                              return (
-                                <Path
-                                  key={`line_${shape.id}`}
-                                  d={shape.d}
-                                  transform={shape.transform}
-                                  fill="none"
-                                  stroke={strokeColor}
-                                  strokeWidth={0.5}
-                                  strokeLinecap="round"
-                                  strokeLinejoin="round"
-                                  pointerEvents="none"
-                                />
-                              );
-                            }
-                          })}
-                        </G>
-                      </G>
-                    </Svg>
-                  )}
-
-                  {/* Top Paper Texture Overlay Layer (Method 2: Multiplied Real Paper Grain on All Colors) */}
-                  {currentPaperTheme.image && (
+                    {/* Paper Background Base: Texture Image or Pure Clean Solid Paper */}
                     <View
-                      pointerEvents="none"
                       style={[
                         StyleSheet.absoluteFill,
                         {
                           width: currentCanvasSize,
                           height: currentCanvasSize,
                           borderRadius: currentCanvasSize / 2,
+                          backgroundColor: currentPaperTheme.backgroundColor,
                           overflow: 'hidden',
-                          opacity: paperTexture === 'cotton' ? (Platform.OS === 'web' ? 0.15 : 0.08) : (Platform.OS === 'web' ? 0.72 : 0.28),
-                          ...(Platform.OS === 'web' ? { mixBlendMode: 'multiply' } : {}),
-                          zIndex: 10,
                         },
                       ]}
                     >
-                      <Image
-                        source={currentPaperTheme.image}
-                        style={{
-                          width: currentCanvasSize,
-                          height: currentCanvasSize,
-                          borderRadius: currentCanvasSize / 2,
-                        }}
-                        resizeMode="cover"
-                      />
+                      {currentPaperTheme.image && (
+                        <Image
+                          source={currentPaperTheme.image}
+                          style={{
+                            width: currentCanvasSize,
+                            height: currentCanvasSize,
+                            borderRadius: currentCanvasSize / 2,
+                          }}
+                          resizeMode="cover"
+                        />
+                      )}
                     </View>
-                  )}
-                </ZoomableCanvas>
+
+                    {Platform.OS === 'web' ? (
+                      <svg width={currentCanvasSize} height={currentCanvasSize} viewBox="0 0 200 200" style={{ position: 'relative', zIndex: 2 }}>
+                        <defs>
+                          <clipPath id="mandalaCircleClipWeb">
+                            <circle cx="100" cy="100" r="98" />
+                          </clipPath>
+                        </defs>
+
+                        {/* Outer circle guideline */}
+                        <circle
+                          cx="100"
+                          cy="100"
+                          r="98"
+                          fill="none"
+                          stroke={currentPaperTheme.guidelineStroke}
+                          strokeWidth="1.5"
+                          strokeDasharray="4 4"
+                          opacity={currentPaperTheme.guidelineOpacity}
+                        />
+
+                        {/* Clipped Mandala Content - Real Paper Base & Shapes */}
+                        <g clipPath="url(#mandalaCircleClipWeb)">
+                          {/* 1. Interactive Fill Layer (Position gap shifted & sealed with 1.8 stroke) */}
+                          {sortedShapes.map((shape) => {
+                            const isOutline = shape.id.toLowerCase().includes('outline');
+                            const isNotouch = shape.id.toLowerCase().includes('notouch');
+                            const fill = isOutline ? '#000000' : (state.mandalaColors[shape.id] || currentPaperTheme.uncoloredFill);
+                            const notClickable = isOutline || isNotouch;
+                            if (shape.type === 'circle') {
+                              return (
+                                <circle
+                                  key={shape.id}
+                                  cx={shape.cx}
+                                  cy={shape.cy}
+                                  r={shape.r}
+                                  fill={fill}
+                                  stroke={fill}
+                                  strokeWidth="1.8"
+                                  strokeLinecap="round"
+                                  strokeLinejoin="round"
+                                  style={{ cursor: notClickable ? 'default' : 'pointer' }}
+                                  onClick={() => !notClickable && colorSegment(shape.id)}
+                                />
+                              );
+                            } else {
+                              return (
+                                <path
+                                  key={shape.id}
+                                  d={shape.d}
+                                  transform={shape.transform}
+                                  fill={fill}
+                                  stroke={fill}
+                                  strokeWidth="1.8"
+                                  strokeLinecap="round"
+                                  strokeLinejoin="round"
+                                  style={{ cursor: notClickable ? 'default' : 'pointer' }}
+                                  onClick={() => !notClickable && colorSegment(shape.id)}
+                                />
+                              );
+                            }
+                          })}
+
+                          {/* 2. Ultra-Thin 0.5px Crisp Paper Ink Stroke Line Overlay Layer */}
+                          <g style={{ pointerEvents: 'none', opacity: 0.9 }}>
+                            {sortedShapes.map((shape) => {
+                              const isOutline = shape.id.toLowerCase().includes('outline');
+                              if (isOutline) return null;
+                              const strokeColor = currentPaperTheme.lineStroke;
+                              if (shape.type === 'circle') {
+                                return (
+                                  <circle
+                                    key={`line_${shape.id}`}
+                                    cx={shape.cx}
+                                    cy={shape.cy}
+                                    r={shape.r}
+                                    fill="none"
+                                    stroke={strokeColor}
+                                    strokeWidth="0.5"
+                                    strokeLinecap="round"
+                                    strokeLinejoin="round"
+                                  />
+                                );
+                              } else {
+                                return (
+                                  <path
+                                    key={`line_${shape.id}`}
+                                    d={shape.d}
+                                    transform={shape.transform}
+                                    fill="none"
+                                    stroke={strokeColor}
+                                    strokeWidth="0.5"
+                                    strokeLinecap="round"
+                                    strokeLinejoin="round"
+                                  />
+                                );
+                              }
+                            })}
+                          </g>
+                        </g>
+                      </svg>
+                    ) : (
+                      <Svg width={currentCanvasSize} height={currentCanvasSize} viewBox="0 0 200 200" style={{ position: 'relative', zIndex: 2 }}>
+                        <Defs>
+                          <ClipPath id="mandalaCircleClipNative">
+                            <Circle cx="100" cy="100" r={98} />
+                          </ClipPath>
+                        </Defs>
+
+                        {/* Outer circle guideline */}
+                        <Circle
+                          cx="100"
+                          cy="100"
+                          r={98}
+                          fill="none"
+                          stroke={currentPaperTheme.guidelineStroke}
+                          strokeWidth={1.5}
+                          strokeDasharray="4 4"
+                          opacity={currentPaperTheme.guidelineOpacity}
+                        />
+
+                        {/* Clipped Mandala Content - Real Paper Base & Shapes */}
+                        <G clipPath="url(#mandalaCircleClipNative)">
+                          {/* 1. Interactive Fill Layer (Position gap shifted & sealed with 1.8 stroke) */}
+                          {sortedShapes.map((shape) => {
+                            const isOutline = shape.id.toLowerCase().includes('outline');
+                            const isNotouch = shape.id.toLowerCase().includes('notouch');
+                            const fill = isOutline ? '#000000' : (state.mandalaColors[shape.id] || currentPaperTheme.uncoloredFill);
+                            const notClickable = isOutline || isNotouch;
+                            if (shape.type === 'circle') {
+                              return (
+                                <Circle
+                                  key={shape.id}
+                                  cx={shape.cx}
+                                  cy={shape.cy}
+                                  r={shape.r}
+                                  fill={fill}
+                                  stroke={fill}
+                                  strokeWidth={1.8}
+                                  strokeLinecap="round"
+                                  strokeLinejoin="round"
+                                  onPress={() => !notClickable && colorSegment(shape.id)}
+                                />
+                              );
+                            } else {
+                              return (
+                                <Path
+                                  key={shape.id}
+                                  d={shape.d}
+                                  transform={shape.transform}
+                                  fill={fill}
+                                  stroke={fill}
+                                  strokeWidth={1.8}
+                                  strokeLinecap="round"
+                                  strokeLinejoin="round"
+                                  onPress={() => !notClickable && colorSegment(shape.id)}
+                                />
+                              );
+                            }
+                          })}
+
+                          {/* 2. Ultra-Thin 0.5px Crisp Paper Ink Stroke Line Overlay Layer */}
+                          <G opacity={0.9}>
+                            {sortedShapes.map((shape) => {
+                              const isOutline = shape.id.toLowerCase().includes('outline');
+                              if (isOutline) return null;
+                              const strokeColor = currentPaperTheme.lineStroke;
+                              if (shape.type === 'circle') {
+                                return (
+                                  <Circle
+                                    key={`line_${shape.id}`}
+                                    cx={shape.cx}
+                                    cy={shape.cy}
+                                    r={shape.r}
+                                    fill="none"
+                                    stroke={strokeColor}
+                                    strokeWidth={0.5}
+                                    strokeLinecap="round"
+                                    strokeLinejoin="round"
+                                    pointerEvents="none"
+                                  />
+                                );
+                              } else {
+                                return (
+                                  <Path
+                                    key={`line_${shape.id}`}
+                                    d={shape.d}
+                                    transform={shape.transform}
+                                    fill="none"
+                                    stroke={strokeColor}
+                                    strokeWidth={0.5}
+                                    strokeLinecap="round"
+                                    strokeLinejoin="round"
+                                    pointerEvents="none"
+                                  />
+                                );
+                              }
+                            })}
+                          </G>
+                        </G>
+                      </Svg>
+                    )}
+
+                    {/* Top Paper Texture Overlay Layer (Method 2: Multiplied Real Paper Grain on All Colors) */}
+                    {currentPaperTheme.image && (
+                      <View
+                        pointerEvents="none"
+                        style={[
+                          StyleSheet.absoluteFill,
+                          {
+                            width: currentCanvasSize,
+                            height: currentCanvasSize,
+                            borderRadius: currentCanvasSize / 2,
+                            overflow: 'hidden',
+                            opacity: paperTexture === 'cotton' ? (Platform.OS === 'web' ? 0.15 : 0.08) : (Platform.OS === 'web' ? 0.72 : 0.28),
+                            ...(Platform.OS === 'web' ? { mixBlendMode: 'multiply' } : {}),
+                            zIndex: 10,
+                          },
+                        ]}
+                      >
+                        <Image
+                          source={currentPaperTheme.image}
+                          style={{
+                            width: currentCanvasSize,
+                            height: currentCanvasSize,
+                            borderRadius: currentCanvasSize / 2,
+                          }}
+                          resizeMode="cover"
+                        />
+                      </View>
+                    )}
+                  </ZoomableCanvas>
+
+                  {/* Floating Share Button at Top-Right of Mandala Design */}
+                  <Pressable
+                    onPress={handleExportDesign}
+                    style={{
+                      position: 'absolute',
+                      top: 6,
+                      right: 0,
+                      zIndex: 50,
+                      width: 34,
+                      height: 34,
+                      borderRadius: 17,
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      backgroundColor: 'rgba(15, 20, 32, 0.85)',
+                      borderWidth: 1,
+                      borderColor: 'rgba(255, 234, 167, 0.35)',
+                      shadowColor: '#000',
+                      shadowOffset: { width: 0, height: 2 },
+                      shadowOpacity: 0.35,
+                      shadowRadius: 4,
+                      elevation: 5,
+                    }}
+                  >
+                    <Image
+                      source={require('../../assets/images/ic_share.png')}
+                      style={{ width: 18, height: 18 }}
+                      resizeMode="contain"
+                    />
+                  </Pressable>
+                </View>
               </View>
 
               {/* Paper & Brush Actions Section */}
@@ -4338,10 +4837,16 @@ export default function HomeScreen() {
                     onPress={handleCompletePress}
                     style={[
                       styles.completeColorBtn,
-                      progressPercent < 30 && styles.completeColorBtnDisabled
+                      progressPercent < 30 ? styles.completeColorBtnDisabled : styles.completeColorBtnActive
                     ]}
                   >
-                    <ThemedText type="smallBold" style={styles.completeColorBtnText}>
+                    <ThemedText
+                      type="smallBold"
+                      style={[
+                        styles.completeColorBtnText,
+                        progressPercent < 30 ? styles.completeColorBtnTextDisabled : styles.completeColorBtnTextActive
+                      ]}
+                    >
                       {t('mandala_coloring.finish_flower')} ({progressPercent}%)
                     </ThemedText>
                   </Pressable>
@@ -4393,43 +4898,67 @@ export default function HomeScreen() {
 
                       </>
                     )}
-                    <View style={styles.cardBody}>
-                      <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center', marginBottom: 12, paddingHorizontal: 16 }}>
-                        <ThemedText
-                          style={[styles.cardStepTitle, currentLevel === 5 && styles.cardStepTitleLv5Shadow, { marginBottom: 0, flexShrink: 1, wordBreak: 'keep-all' }] as any}
-                          lineBreakStrategyIOS="hangul-word"
-                        >
-                          {/^[^\w\s가-힣]/.test(stepDetails.title) && (
-                            <>
-                              <Image
-                                source={
-                                  currentLevel === 1
-                                    ? require('../../assets/images/seed.png')
-                                    : currentLevel === 2
-                                      ? require('../../assets/images/process_ing.png')
-                                      : currentLevel === 3
-                                        ? require('../../assets/images/lev.png')
-                                        : currentLevel === 4
-                                          ? require('../../assets/images/process_mid.png')
-                                          : require('../../assets/images/process_done.png')
-                                }
-                                style={{ width: 18, height: 18, transform: [{ translateY: 6 }] }}
-                                resizeMode="contain"
-                              />
-                              {' '}
-                            </>
-                          )}
-                          {stepDetails.title.replace(/^[^\w\s가-힣]+\s*/, '')}
-                        </ThemedText>
+                    <View
+                      style={[
+                        styles.cardBody,
+                        currentLevel === 5 && {
+                          flex: 1,
+                          justifyContent: 'space-between',
+                          paddingTop: isExporting ? 36 : 32,
+                          paddingBottom: isExporting ? 18 : 10,
+                          paddingHorizontal: 16,
+                          minHeight: 430
+                        }
+                      ]}
+                    >
+                      {/* Top Header Group */}
+                      <View style={{ width: '100%', alignItems: 'center' }}>
+                        {!isExporting && (
+                          <View style={{ width: '100%', alignItems: 'center', justifyContent: 'center', marginTop: 18, marginBottom: 12 }}>
+                            <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center' }}>
+                              {/^[^\w\s가-힣]/.test(stepDetails.title) && (
+                                <Image
+                                  source={
+                                    currentLevel === 1
+                                      ? require('../../assets/images/seed.png')
+                                      : currentLevel === 2
+                                        ? require('../../assets/images/process_ing.png')
+                                        : currentLevel === 3
+                                          ? require('../../assets/images/lev.png')
+                                          : currentLevel === 4
+                                            ? require('../../assets/images/process_mid.png')
+                                            : require('../../assets/images/process_done.png')
+                                  }
+                                  style={{ width: 18, height: 18, marginRight: 6 }}
+                                  resizeMode="contain"
+                                />
+                              )}
+                              <ThemedText
+                                style={[
+                                  styles.cardStepTitle,
+                                  currentLevel === 5 && styles.cardStepTitleLv5Shadow,
+                                  { marginBottom: 0, textAlign: 'left' },
+                                  Platform.OS === 'web' && ({ whiteSpace: 'nowrap' } as any)
+                                ]}
+                                numberOfLines={1}
+                                adjustsFontSizeToFit={true}
+                                minimumFontScale={0.85}
+                              >
+                                {stepDetails.title.replace(/^[^\w\s가-힣]+\s*/, '')}
+                              </ThemedText>
+                            </View>
+                          </View>
+                        )}
+
+                        <View style={[styles.cardPlantTag, currentLevel === 5 && [styles.cardPlantTagLv5, { marginBottom: 0 }]]}>
+                          <ThemedText type="smallBold" style={[styles.cardPlantTagText, currentLevel === 5 && styles.cardPlantTagTextLv5]}>
+                            {activePot?.name}
+                          </ThemedText>
+                        </View>
                       </View>
 
-                      <View style={[styles.cardPlantTag, currentLevel === 5 && styles.cardPlantTagLv5]}>
-                        <ThemedText type="smallBold" style={[styles.cardPlantTagText, currentLevel === 5 && styles.cardPlantTagTextLv5]}>
-                          {activePot?.name}
-                        </ThemedText>
-                      </View>
-
-                      <View style={{ width: 140, height: 140, justifyContent: 'center', alignItems: 'center', marginTop: 0, marginBottom: 12, position: 'relative', transform: [{ scale: 1.1 }] }}>
+                      {/* Centered Glowing Blossom */}
+                      <View style={{ width: 140, height: 140, justifyContent: 'center', alignItems: 'center', marginVertical: currentLevel === 5 ? 16 : 6, position: 'relative', transform: [{ scale: 1.15 }] }}>
                         {currentLevel === 5 ? (
                           <>
                             {/* Stem and leaves under the floating flower */}
@@ -4478,7 +5007,8 @@ export default function HomeScreen() {
                         )}
                       </View>
 
-                      <View style={styles.cardMessageBox}>
+                      {/* Bottom Message Box */}
+                      <View style={[styles.cardMessageBox, currentLevel === 5 && { marginTop: 0, marginBottom: 4, transform: [{ translateY: -44 }] }]}>
                         <ThemedText
                           type="default"
                           style={[
@@ -4684,20 +5214,30 @@ export default function HomeScreen() {
             {/* Codex scroll history */}
             {(() => {
               const growingPlants = state.pots.filter(p => p.level > 0 && p.level < 5).map(p => ({
+                id: p.id,
                 name: p.name,
                 date: `${t('greenhouse.status_growing')} (Lv.${p.level})`,
                 desc: p.desc,
-                colors: p.colors || [],
+                colors: (p.colors || []).slice(0, p.level),
                 diaries: p.diaries,
+                stepMandalas: p.stepMandalas,
+                level: p.level,
+                type: p.type || 'green',
+                templateId: p.templateId,
                 isGrowing: true
               }));
 
               const completedPlants = state.archive.map(p => ({
+                id: p.id,
                 name: p.name,
                 date: p.date,
                 desc: p.desc,
                 colors: p.colors || [],
                 diaries: p.diaries,
+                stepMandalas: p.stepMandalas,
+                level: 5,
+                type: p.type || 'yellow',
+                templateId: p.templateId,
                 isGrowing: false
               }));
 
@@ -4725,13 +5265,34 @@ export default function HomeScreen() {
                     </View>
                   ) : (
                     allDisplayPlants.map((plant, idx) => (
-                      <View key={idx} style={[styles.archiveItem, plant.isGrowing && { backgroundColor: 'rgba(139, 233, 253, 0.02)', borderColor: '#1a2238' }]}>
+                      <View key={idx} style={styles.archiveItem}>
                         <View style={styles.archiveItemHeader}>
-                          <View style={[styles.archiveItemBadge, plant.isGrowing && { backgroundColor: 'rgba(168, 227, 154, 0.08)', borderColor: 'rgba(168, 227, 154, 0.25)' }]}>
-                            <ThemedText type="smallBold" style={[styles.archiveItemBadgeText, plant.isGrowing && { color: '#ddefb7' }]}>
-                              {plant.name}
-                            </ThemedText>
-                          </View>
+                          {plant.isGrowing ? (
+                            <View style={styles.archiveItemBadge}>
+                              <ThemedText type="smallBold" style={styles.archiveItemBadgeText}>
+                                {plant.name}
+                              </ThemedText>
+                            </View>
+                          ) : (
+                            <Pressable
+                              onPress={() => handleOpenArchiveStepDetail(plant, 'bloom')}
+                              style={({ pressed }) => [
+                                styles.archiveItemBadge,
+                                { backgroundColor: 'rgba(255, 234, 167, 0.08)', borderColor: 'rgba(255, 234, 167, 0.35)' },
+                                { flexDirection: 'row', alignItems: 'center', gap: 4 },
+                                pressed && { opacity: 0.7, transform: [{ scale: 0.98 }] }
+                              ]}
+                            >
+                              <ThemedText type="smallBold" style={[styles.archiveItemBadgeText, { color: '#FFEAA7' }]}>
+                                {plant.name}
+                              </ThemedText>
+                              <Image
+                                source={require('../../assets/images/process_done.png')}
+                                style={{ width: 14, height: 14, marginLeft: 2 }}
+                                resizeMode="contain"
+                              />
+                            </Pressable>
+                          )}
                           {!isEn() && (
                             <ThemedText type="small" style={styles.archiveItemDate}>
                               {plant.date}
@@ -4747,18 +5308,18 @@ export default function HomeScreen() {
                           styles.archiveItemColors,
                           isEn() && { justifyContent: 'space-between', alignItems: 'center' }
                         ]}>
-                          <View style={{ flexDirection: 'row', gap: 6 }}>
+                          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
                             {plant.colors.map((c, i) => {
                               const stepLevel = i + 1;
                               const diaryEntry = plant.diaries?.[stepLevel];
                               return (
                                 <Pressable
                                   key={i}
-                                  onPress={() => handleOpenDiaryViewModal(plant.name, stepLevel, diaryEntry)}
+                                  onPress={() => handleOpenArchiveStepDetail(plant, stepLevel)}
                                   style={({ pressed }) => [
                                     styles.archiveColorDotBtn,
                                     { backgroundColor: c },
-                                    pressed && { opacity: 0.7 }
+                                    pressed && { opacity: 0.7, transform: [{ scale: 0.95 }] }
                                   ]}
                                 >
                                   {!!diaryEntry && (
@@ -5241,25 +5802,25 @@ export default function HomeScreen() {
               <View style={[styles.textAreaWrapper, { marginTop: 0 }]}>
                 <TextInput
                   multiline={true}
-                  numberOfLines={3}
+                  numberOfLines={5}
                   value={diaryContent}
                   onChangeText={setDiaryContent}
                   placeholder={t('diary.placeholder')}
                   placeholderTextColor="rgba(154, 159, 176, 0.4)"
-                  style={styles.textAreaInput}
+                  style={[styles.textAreaInput, { minHeight: 120 }]}
                 />
               </View>
             </View>
 
-            <View style={styles.modalActions}>
+            <View style={{ flexDirection: 'row', gap: 10, marginTop: 4 }}>
               <Pressable
-                style={styles.modalCancelBtn}
+                style={[styles.modalCancelBtn, { flex: 1, height: 48, paddingVertical: 0 }]}
                 onPress={() => setIsDiaryModalOpen(false)}
               >
                 <ThemedText style={styles.modalCancelText}>{t('common.back')}</ThemedText>
               </Pressable>
               <Pressable
-                style={[styles.modalOkBtn, { backgroundColor: 'rgb(189, 147, 249)' }]}
+                style={[styles.modalOkBtn, { flex: 1, height: 48, paddingVertical: 0, backgroundColor: 'rgb(189, 147, 249)' }]}
                 onPress={handleSaveDiary}
               >
                 <ThemedText style={[styles.modalOkText, { color: '#000000', fontWeight: 'bold' }]}>{t('diary.submit')}</ThemedText>
@@ -5269,69 +5830,306 @@ export default function HomeScreen() {
         </View>
       </Modal>
 
-      {/* DIARY VIEW MODAL */}
+      {/* ARCHIVE STEP & FLOWER DETAIL MODAL (FULL SCREEN) */}
       <Modal
-        visible={isDiaryViewModalOpen}
-        transparent={true}
-        animationType="fade"
-        onRequestClose={() => setIsDiaryViewModalOpen(false)}
+        visible={isArchiveDetailModalOpen}
+        transparent={false}
+        animationType="slide"
+        onRequestClose={() => setIsArchiveDetailModalOpen(false)}
       >
-        <View style={styles.modalOverlay}>
-          <View style={[styles.modalCard, { justifyContent: 'flex-start', padding: Spacing.three, gap: Spacing.three }]}>
-            <View style={{ gap: Spacing.two }}>
-              <View style={{ alignItems: 'center' }}>
-                <ThemedText type="smallBold" style={{ color: '#ddefb7', fontSize: 15, letterSpacing: 1.5, textAlign: 'center', textTransform: 'uppercase' }}>
-                  {t('diary.modal_title')}
-                </ThemedText>
-              </View>
+        <View style={{ flex: 1, width: '100%', height: '100%', backgroundColor: '#070b16' }}>
+          {/* Background Starry Image */}
+          <Image
+            source={require('../../assets/images/my_box.png')}
+            style={[StyleSheet.absoluteFill, { width: '100%', height: '100%', opacity: 0.5 }]}
+            resizeMode="cover"
+          />
 
-              {selectedDiary ? (
+          {/* Header bar */}
+          {(() => {
+            const plant = selectedArchivePlant;
+            const isBloom = selectedArchiveStep === 'bloom';
+            const currentStep = isBloom ? 5 : (typeof selectedArchiveStep === 'number' ? selectedArchiveStep : 1);
+            const stepMandalaData = plant?.stepMandalas?.[currentStep];
+            const diaryEntry = plant?.diaries?.[currentStep];
+            const stepDate = isBloom
+              ? (!plant?.isGrowing ? plant?.date : undefined)
+              : (stepMandalaData?.date || diaryEntry?.date || (!plant?.isGrowing ? plant?.date : undefined));
+
+            return (
+              <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingHorizontal: Spacing.three, paddingTop: Platform.OS === 'ios' ? 50 : Spacing.three, paddingBottom: Spacing.two, borderBottomWidth: 1, borderColor: 'rgba(255, 255, 255, 0.08)' }}>
+                <View style={{ flexDirection: 'row', alignItems: 'baseline', gap: 8 }}>
+                  <ThemedText type="smallBold" style={{ color: '#ddefb7', fontSize: 16, letterSpacing: 1 }}>
+                    {isBloom
+                      ? (isEn() ? 'Completed Flower' : '완개꽃')
+                      : (isEn() ? 'Mindfulness' : '마음챙김')}
+                  </ThemedText>
+                  {!!stepDate && (
+                    <ThemedText type="small" style={{ color: '#9A9FB0', fontSize: 12 }}>
+                      {stepDate}
+                    </ThemedText>
+                  )}
+                </View>
+                <Pressable
+                  onPress={() => setIsArchiveDetailModalOpen(false)}
+                  hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
+                >
+                  <ThemedText style={{ color: '#9A9FB0', fontSize: 20, fontWeight: 'bold' }}>✕</ThemedText>
+                </Pressable>
+              </View>
+            );
+          })()}
+
+          <ScrollView
+            style={{ flex: 1 }}
+            contentContainerStyle={{ paddingHorizontal: Spacing.three, paddingVertical: Spacing.four, alignItems: 'center', gap: 20 }}
+            showsVerticalScrollIndicator={false}
+          >
+            {selectedArchivePlant && (() => {
+              const plant = selectedArchivePlant;
+              const isBloom = selectedArchiveStep === 'bloom';
+              const currentStep = isBloom ? 5 : (typeof selectedArchiveStep === 'number' ? selectedArchiveStep : 1);
+              const diaryEntry: DiaryEntry | undefined = plant.diaries?.[currentStep];
+
+              const dominantColor = plant.colors?.[currentStep - 1] || (
+                plant.type === 'red' ? '#ef4444' :
+                  plant.type === 'yellow' ? '#FFB86C' :
+                    plant.type === 'blue' ? '#8BE9FD' :
+                      plant.type === 'purple' ? '#BD93F9' :
+                        '#9DBA7D'
+              );
+
+              const stepMandalaData = plant.stepMandalas?.[currentStep];
+              const stepTemplateId = stepMandalaData?.templateId || plant.templateId;
+              const stepMandalaColors = stepMandalaData?.mandalaColors || (plant.isGrowing && Object.keys(state.mandalaColors || {}).length > 0 ? state.mandalaColors : undefined);
+              const stepPaperTexture = (stepMandalaData?.paperTexture || (plant.isGrowing ? paperTexture : undefined) || 'cotton') as PaperTextureType;
+              const stepCottonColor = (stepMandalaData?.cottonColor || (plant.isGrowing ? cottonColor : undefined) || 'cream') as CottonColorType;
+
+              return (
                 <>
-                  <View style={[styles.cardQuestionBox, { borderColor: 'rgba(168, 227, 154, 0.25)', backgroundColor: 'rgba(10, 13, 24, 0.8)', marginTop: 0, paddingHorizontal: Spacing.three, paddingVertical: Spacing.two }]}>
-                    <View style={{ flexDirection: 'row', alignItems: 'flex-start', justifyContent: 'center', gap: 8, paddingHorizontal: 4 }}>
+                  {/* 1. 완개꽃 (Full Bloom Flower) 또는 1~5단계 만다라 도안 */}
+                  {isBloom ? (
+                    <View
+                      ref={archiveCardRef}
+                      collapsable={false}
+                      style={[styles.reflectionCard, { overflow: 'hidden', width: '100%', maxWidth: 440, alignSelf: 'center', marginHorizontal: 0 }]}
+                    >
+                      {/* Background mandala art glow overlay: done.png */}
+                      <View style={[StyleSheet.absoluteFill, { backgroundColor: '#060a14', justifyContent: 'center', alignItems: 'center' }]}>
+                        <Image
+                          source={require('../../assets/images/done.png')}
+                          style={{ width: '100%', height: '100%' }}
+                          resizeMode="cover"
+                        />
+                      </View>
+
+                      <View style={[styles.cardBody, { paddingTop: 28, paddingBottom: 10, paddingHorizontal: 20, alignItems: 'center', justifyContent: 'space-between', flex: 1, minHeight: 430 }]}>
+                        {/* Plant name tag badge */}
+                        <View style={[styles.cardPlantTag, styles.cardPlantTagLv5, { marginTop: 0, marginBottom: 0 }]}>
+                          <ThemedText type="smallBold" style={[styles.cardPlantTagText, styles.cardPlantTagTextLv5]}>
+                            {plant.name}
+                          </ThemedText>
+                        </View>
+
+                        {/* Centered glowing blossom and sparkles */}
+                        <View style={{ width: 140, height: 140, justifyContent: 'center', alignItems: 'center', marginVertical: 16, position: 'relative', transform: [{ scale: 1.15 }] }}>
+                          <Image
+                            source={require('../../assets/images/flow_body.png')}
+                            style={{ width: 140, height: 140, position: 'absolute', transform: [{ translateY: 24 }] }}
+                            resizeMode="contain"
+                          />
+                          <GlowingBlossom
+                            type={plant.type || 'yellow'}
+                            color={dominantColor}
+                            colors={plant.colors}
+                          />
+                          <Lv5GlowCircle left={45} top={5} color="#FFF275" delay={0} />
+                          <Lv5GlowCircle left={70} top={-2} color="#FF7E5F" delay={400} />
+                          <Lv5GlowCircle left={95} top={5} color="#8BE9FD" delay={800} />
+
+                          <FloatingCardSparkle id={101} left={10} top={12} size={5} />
+                          <FloatingCardSparkle id={102} left={115} top={8} size={4} />
+                          <FloatingCardSparkle id={103} left={5} top={60} size={6} />
+                          <FloatingCardSparkle id={104} left={122} top={65} size={5} />
+                          <FloatingCardSparkle id={105} left={25} top={85} size={4} />
+                          <FloatingCardSparkle id={106} left={105} top={90} size={6} />
+                        </View>
+
+                        {/* Card message / flower desc */}
+                        <View style={[styles.cardMessageBox, { marginTop: 0, marginBottom: 4, transform: [{ translateY: -44 }] }]}>
+                          <ThemedText
+                            type="default"
+                            style={[
+                              styles.cardMessage,
+                              styles.cardMessageLv5,
+                              { wordBreak: 'keep-all' } as any
+                            ]}
+                            lineBreakStrategyIOS="hangul-word"
+                          >
+                            &quot;{plant.desc}&quot;
+                          </ThemedText>
+                        </View>
+                      </View>
+                    </View>
+                  ) : (
+                    /* Mandala Card Frame matching user mockup */
+                    <View
+                      style={{
+                        width: '100%',
+                        maxWidth: 440,
+                        backgroundColor: 'rgba(13, 16, 13, 0.65)',
+                        borderRadius: 24,
+                        borderWidth: 1,
+                        borderColor: '#374229',
+                        paddingHorizontal: 20,
+                        paddingVertical: 24,
+                        alignItems: 'center',
+                        alignSelf: 'center',
+                        position: 'relative'
+                      }}
+                    >
+                      {/* Mandala Canvas Artwork */}
+                      <View
+                        ref={archiveMandalaRef}
+                        collapsable={false}
+                        style={{ alignItems: 'center', justifyContent: 'center' }}
+                      >
+                        <MandalaCanvasArtwork
+                          templateId={stepTemplateId}
+                          colors={plant.colors}
+                          mandalaColors={stepMandalaColors}
+                          paperTexture={stepPaperTexture}
+                          cottonColor={stepCottonColor}
+                          step={currentStep}
+                          size={Math.min(currentCanvasSize, 280)}
+                          interactive={false}
+                        />
+                      </View>
+
+                      {/* Floating Circular Share Button at Bottom-Right (hidden during export) */}
+                      {!isExportingArchiveCard && (
+                        <Pressable
+                          onPress={handleExportArchiveCard}
+                          style={({ pressed }) => [{
+                            position: 'absolute',
+                            bottom: 14,
+                            right: 14,
+                            zIndex: 50,
+                            width: 36,
+                            height: 36,
+                            borderRadius: 18,
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            backgroundColor: 'rgba(15, 20, 32, 0.85)',
+                            borderWidth: 1,
+                            borderColor: 'rgba(255, 234, 167, 0.35)',
+                            shadowColor: '#000',
+                            shadowOffset: { width: 0, height: 2 },
+                            shadowOpacity: 0.35,
+                            shadowRadius: 4,
+                            elevation: 5,
+                          }, pressed && { opacity: 0.7, transform: [{ scale: 0.95 }] }]}
+                        >
+                          <Image
+                            source={require('../../assets/images/ic_share.png')}
+                            style={{ width: 18, height: 18 }}
+                            resizeMode="contain"
+                          />
+                        </Pressable>
+                      )}
+                    </View>
+                  )}
+
+                  {/* 2. 완개꽃일 때의 공유하기 버튼 */}
+                  {isBloom && (
+                    <Pressable
+                      onPress={handleExportArchiveCard}
+                      style={({ pressed }) => [
+                        styles.bookButton,
+                        { width: '100%', maxWidth: 440, justifyContent: 'center', gap: 8, paddingVertical: 14 },
+                        pressed && { opacity: 0.85, transform: [{ scale: 0.98 }] }
+                      ]}
+                    >
                       <Image
-                        source={require('../../assets/images/view.png')}
-                        style={{ width: 16, height: 16, marginTop: 2 }}
+                        source={require('../../assets/images/ic_share.png')}
+                        style={{ width: 22, height: 22 }}
                         resizeMode="contain"
                       />
-                      <ThemedText style={[styles.cardQuestionText, { color: '#FFEAA7', fontSize: 13, lineHeight: 20, flexShrink: 1, textAlign: 'left', wordBreak: 'keep-all' } as any]}>
-                        {selectedDiary.question.replace(/^[^\w\s가-힣]+\s*/, '')}
+                      <ThemedText type="smallBold" style={[
+                        styles.bookButtonText,
+                        { fontSize: 14, fontWeight: 'bold' },
+                        isEn() && { lineHeight: 15 }
+                      ]}>
+                        {isEn() ? 'Share Completed Flower' : '완개꽃 공유하기'}
                       </ThemedText>
+                    </Pressable>
+                  )}
+
+                  {/* 3. 마음일기 섹션 (만다라 도안일 때만) */}
+                  {!isBloom && (
+                    <View style={{ width: '100%', maxWidth: 440, gap: 10, marginTop: 4 }}>
+                      {/* Section Header: ic_write.png + 마음일기 */}
+                      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 2 }}>
+                        <Image
+                          source={require('../../assets/images/ic_write.png')}
+                          style={{ width: 18, height: 18 }}
+                          resizeMode="contain"
+                        />
+                        <ThemedText type="smallBold" style={{ color: '#ddefb7', fontSize: 15, fontWeight: 'bold' }}>
+                          {t('diary.modal_title')}
+                        </ThemedText>
+                      </View>
+
+                      {/* Diary Card Box */}
+                      <View style={{
+                        backgroundColor: 'rgba(13, 16, 13, 0.65)',
+                        borderRadius: 24,
+                        borderWidth: 1,
+                        borderColor: '#374229',
+                        paddingHorizontal: 20,
+                        paddingVertical: 18,
+                        gap: 12
+                      }}>
+                        {/* Question Row */}
+                        <View style={{ flexDirection: 'row', alignItems: 'flex-start' }}>
+                          <ThemedText style={{ color: '#FFEAA7', fontSize: 13, lineHeight: 20, flexShrink: 1, fontWeight: '600' }}>
+                            {diaryEntry ? diaryEntry.question.replace(/^[^\w\s가-힣]+\s*/, '') : (isEn() ? "No reflection question." : "오늘의 마음을 가만히 들여다보세요.")}
+                          </ThemedText>
+                        </View>
+
+                        {/* Diary Content Text */}
+                        {diaryEntry ? (
+                          <ThemedText style={{ color: '#ffffff', fontSize: 13, lineHeight: 22, textAlign: 'left' }}>
+                            {diaryEntry.content}
+                          </ThemedText>
+                        ) : (
+                          <View style={{ paddingVertical: 12, alignItems: 'center' }}>
+                            <ThemedText type="smallBold" style={{ color: '#9A9FB0', fontSize: 13, textAlign: 'center' }}>
+                              {t('diary.empty_diary')}
+                            </ThemedText>
+                            <ThemedText type="small" style={{ color: 'rgba(154, 159, 176, 0.5)', fontSize: 11, marginTop: 4, textAlign: 'center' }}>
+                              {t('diary.empty_diary_desc')}
+                            </ThemedText>
+                          </View>
+                        )}
+                      </View>
                     </View>
-                  </View>
-
-                  <ScrollView style={{ maxHeight: 140, backgroundColor: 'rgba(255, 255, 255, 0.03)', borderRadius: 16, borderWidth: 1, borderColor: 'rgba(255, 255, 255, 0.05)', padding: Spacing.two }}>
-                    <ThemedText style={{ color: '#ffffff', fontSize: 13, lineHeight: 21 }}>
-                      {selectedDiary.content}
-                    </ThemedText>
-                  </ScrollView>
-
-                  <ThemedText type="small" style={{ color: '#9A9FB0', textAlign: 'right', fontSize: 11 }}>
-                    {t('diary.written_date', { date: selectedDiary.date })}
-                  </ThemedText>
+                  )}
                 </>
-              ) : (
-                <View style={{ paddingVertical: Spacing.five, alignItems: 'center' }}>
-                  <Image
-                    source={require('../../assets/images/ic_write.png')}
-                    style={{ width: 44, height: 44, marginBottom: 10 }}
-                    resizeMode="contain"
-                  />
-                  <ThemedText type="smallBold" style={{ color: '#9A9FB0', fontSize: 13, textAlign: 'center' }}>
-                    {t('diary.empty_diary')}
-                  </ThemedText>
-                  <ThemedText type="small" style={{ color: 'rgba(154, 159, 176, 0.5)', fontSize: 11, marginTop: 4, textAlign: 'center' }}>
-                    {t('diary.empty_diary_desc')}
-                  </ThemedText>
-                </View>
-              )}
-            </View>
+              );
+            })()}
+          </ScrollView>
 
+          {/* Bottom Close Button */}
+          <View style={{ paddingHorizontal: Spacing.three, paddingBottom: Platform.OS === 'ios' ? 34 : Spacing.three, paddingTop: Spacing.two, backgroundColor: 'transparent' }}>
             <Pressable
-              style={[styles.modalOkBtnFull, { marginTop: Spacing.two }]}
-              onPress={() => setIsDiaryViewModalOpen(false)}
+              style={({ pressed }) => [
+                styles.modalOkBtnFull,
+                pressed && { opacity: 0.85, transform: [{ scale: 0.99 }] }
+              ]}
+              onPress={() => setIsArchiveDetailModalOpen(false)}
             >
-              <ThemedText style={styles.modalOkText}>{t('common.close')}</ThemedText>
+              <ThemedText style={[styles.modalOkText, { fontWeight: 'bold' }]}>{t('common.close')}</ThemedText>
             </Pressable>
           </View>
         </View>
@@ -5911,9 +6709,15 @@ export default function HomeScreen() {
 
             <View style={styles.modalActions}>
               {modalTitle === t('archive.reset_modal_title') || modalTitle === "온실 초기화 경고" ? (
-                <>
+                <View style={{ flexDirection: 'row', gap: 10, width: '100%' }}>
                   <Pressable
-                    style={styles.modalConfirmBtn}
+                    style={[styles.modalCancelBtn, { flex: 1, height: 48, paddingVertical: 0 }]}
+                    onPress={closeModal}
+                  >
+                    <ThemedText type="smallBold" style={styles.modalCancelText}>{t('archive.reset_modal_cancel')}</ThemedText>
+                  </Pressable>
+                  <Pressable
+                    style={[styles.modalConfirmBtn, { flex: 1, height: 48, paddingVertical: 0 }]}
                     onPress={async () => {
                       closeModal();
                       await resetGame();
@@ -5923,12 +6727,9 @@ export default function HomeScreen() {
                   >
                     <ThemedText type="smallBold" style={styles.modalConfirmText}>{t('archive.reset_modal_confirm')}</ThemedText>
                   </Pressable>
-                  <Pressable style={styles.modalCancelBtn} onPress={closeModal}>
-                    <ThemedText type="smallBold" style={styles.modalCancelText}>{t('archive.reset_modal_cancel')}</ThemedText>
-                  </Pressable>
-                </>
+                </View>
               ) : (
-                <Pressable style={styles.modalOkBtnFull} onPress={closeModal}>
+                <Pressable style={[styles.modalOkBtnFull, { height: 48, paddingVertical: 0 }]} onPress={closeModal}>
                   <ThemedText type="smallBold" style={styles.modalOkText}>{t('common.confirm')}</ThemedText>
                 </Pressable>
               )}

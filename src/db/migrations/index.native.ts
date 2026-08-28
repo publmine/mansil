@@ -9,4 +9,18 @@ export async function migrateDatabase(db: SQLite.SQLiteDatabase): Promise<void> 
     await runV1Migration(db);
     await db.execAsync('PRAGMA user_version = 1');
   }
+
+  if (currentVersion < 2) {
+    try {
+      await db.execAsync(`ALTER TABLE pots ADD COLUMN step_mandalas TEXT DEFAULT '{}';`);
+    } catch {
+      // Column may already exist
+    }
+    try {
+      await db.execAsync(`ALTER TABLE archived_plants ADD COLUMN step_mandalas TEXT DEFAULT '{}';`);
+    } catch {
+      // Column may already exist
+    }
+    await db.execAsync('PRAGMA user_version = 2');
+  }
 }

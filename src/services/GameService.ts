@@ -141,7 +141,7 @@ export class GameService {
     };
   }
 
-  async completeColoring(state: GameState): Promise<{ newState: GameState; resultType: 'mind-card' | null }> {
+  async completeColoring(state: GameState, extra?: { paperTexture?: string; cottonColor?: string }): Promise<{ newState: GameState; resultType: 'mind-card' | null }> {
     const targetPot = state.pots[state.currentPotIndex];
     if (!targetPot || targetPot.status === 'locked' || targetPot.level >= 5) {
       return { newState: state, resultType: null };
@@ -231,6 +231,17 @@ export class GameService {
     const emptySoilName = isEn() ? "Empty Soil" : "비어있는 흙";
     const emptySoilDesc = "";
 
+    const updatedStepMandalas = {
+      ...(targetPot.stepMandalas || {}),
+      [nextLevel]: {
+        templateId: activeTemplateId,
+        mandalaColors: state.mandalaColors || {},
+        paperTexture: extra?.paperTexture || state.paperTexture || 'cotton',
+        cottonColor: extra?.cottonColor || state.cottonColor || 'cream',
+        date: new Date().toLocaleDateString()
+      }
+    };
+
     const updatedPots = state.pots.map((p, idx) => {
       if (idx === state.currentPotIndex) {
         return {
@@ -242,7 +253,8 @@ export class GameService {
           type: dominantType,
           desc: finalDesc,
           colors: updatedColors,
-          templateId: nextLevel < 5 ? nextTempId : p.templateId
+          templateId: nextLevel < 5 ? nextTempId : p.templateId,
+          stepMandalas: updatedStepMandalas
           // messageIndex stays the same for all levels of this pot
         };
       }
@@ -296,7 +308,8 @@ export class GameService {
         desc: finalDesc,
         colors: updatedColors,
         templateId: activeTemplateId,
-        diaries: targetPot.diaries
+        diaries: targetPot.diaries,
+        stepMandalas: updatedStepMandalas
       };
       newArchive = [newItem, ...newArchive];
       await this.potRepo.addArchive(newItem);

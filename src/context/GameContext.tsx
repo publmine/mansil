@@ -37,7 +37,7 @@ interface GameContextType {
   removeSelectedColor: (hex: string) => void;
   selectBrush: (hex: string) => void;
   colorSegment: (segmentId: string) => void;
-  completeColoring: () => 'mind-card' | null;
+  completeColoring: (extra?: { paperTexture?: string; cottonColor?: string }) => 'mind-card' | null;
   resetCanvas: () => void;
   resetSelection: () => void;
   collectParticle: (id: number) => void;
@@ -279,9 +279,9 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
     });
   };
 
-  const completeColoring = (): 'mind-card' | null => {
+  const completeColoring = (extra?: { paperTexture?: string; cottonColor?: string }): 'mind-card' | null => {
     if (gameService) {
-      gameService.completeColoring(state).then(({ newState }) => {
+      gameService.completeColoring(state, extra).then(({ newState }) => {
         setState(newState);
       }).catch(e => console.error('completeColoring error:', e));
     }

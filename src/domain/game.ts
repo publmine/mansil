@@ -16,4 +16,6 @@ export interface GameState {
   hasBee?: boolean;
   hasBird?: boolean;
   isPremiumUnlocked?: boolean;
+  paperTexture?: string;
+  cottonColor?: string;
 }

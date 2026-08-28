@@ -21,6 +21,15 @@ export interface Pot {
   templateId?: string;
   diaries?: { [level: number]: DiaryEntry };
   messageIndex?: number; // sequential index for messages[] array
+  stepMandalas?: {
+    [level: number]: {
+      templateId: string;
+      mandalaColors: { [segmentId: string]: string };
+      paperTexture?: string;
+      cottonColor?: string;
+      date?: string;
+    };
+  };
 }
 
 export interface ArchivedPlant {
@@ -32,4 +41,13 @@ export interface ArchivedPlant {
   colors: string[];
   templateId?: string;
   diaries?: { [level: number]: DiaryEntry };
+  stepMandalas?: {
+    [level: number]: {
+      templateId: string;
+      mandalaColors: { [segmentId: string]: string };
+      paperTexture?: string;
+      cottonColor?: string;
+      date?: string;
+    };
+  };
 }

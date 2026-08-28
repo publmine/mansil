@@ -20,7 +20,8 @@ CREATE TABLE IF NOT EXISTS pots (
   desc TEXT DEFAULT '',
   color_ratios TEXT DEFAULT '{}',
   colors TEXT DEFAULT '[]',
-  template_id TEXT
+  template_id TEXT,
+  step_mandalas TEXT DEFAULT '{}'
 );
 
 CREATE TABLE IF NOT EXISTS diaries (
@@ -40,7 +41,8 @@ CREATE TABLE IF NOT EXISTS archived_plants (
   desc TEXT DEFAULT '',
   colors TEXT DEFAULT '[]',
   template_id TEXT,
-  diaries TEXT DEFAULT '{}'
+  diaries TEXT DEFAULT '{}',
+  step_mandalas TEXT DEFAULT '{}'
 );
 
 CREATE TABLE IF NOT EXISTS creatures (

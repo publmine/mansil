@@ -18,7 +18,8 @@ export class SQLitePotRepository implements IPotRepository {
       desc: r.desc || '',
       colorRatios: r.color_ratios ? JSON.parse(r.color_ratios) : {},
       colors: r.colors ? JSON.parse(r.colors) : [],
-      templateId: r.template_id || undefined
+      templateId: r.template_id || undefined,
+      stepMandalas: r.step_mandalas ? JSON.parse(r.step_mandalas) : {}
     }));
   }
 
@@ -36,14 +37,15 @@ export class SQLitePotRepository implements IPotRepository {
       desc: r.desc || '',
       colorRatios: r.color_ratios ? JSON.parse(r.color_ratios) : {},
       colors: r.colors ? JSON.parse(r.colors) : [],
-      templateId: r.template_id || undefined
+      templateId: r.template_id || undefined,
+      stepMandalas: r.step_mandalas ? JSON.parse(r.step_mandalas) : {}
     };
   }
 
   async savePot(pot: Pot): Promise<void> {
     await this.db.runAsync(
-      `INSERT OR REPLACE INTO pots (id, name, adj, noun, level, status, type, desc, color_ratios, colors, template_id)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      `INSERT OR REPLACE INTO pots (id, name, adj, noun, level, status, type, desc, color_ratios, colors, template_id, step_mandalas)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
       [
         pot.id,
         pot.name,
@@ -55,7 +57,8 @@ export class SQLitePotRepository implements IPotRepository {
         pot.desc || '',
         JSON.stringify(pot.colorRatios || {}),
         JSON.stringify(pot.colors || []),
-        pot.templateId || null
+        pot.templateId || null,
+        JSON.stringify(pot.stepMandalas || {})
       ]
     );
   }
@@ -76,14 +79,15 @@ export class SQLitePotRepository implements IPotRepository {
       desc: r.desc || '',
       colors: r.colors ? JSON.parse(r.colors) : [],
       templateId: r.template_id || undefined,
-      diaries: r.diaries ? JSON.parse(r.diaries) : {}
+      diaries: r.diaries ? JSON.parse(r.diaries) : {},
+      stepMandalas: r.step_mandalas ? JSON.parse(r.step_mandalas) : {}
     }));
   }
 
   async addArchive(plant: ArchivedPlant): Promise<void> {
     await this.db.runAsync(
-      `INSERT INTO archived_plants (name, date, type, desc, colors, template_id, diaries)
-       VALUES (?, ?, ?, ?, ?, ?, ?)`,
+      `INSERT INTO archived_plants (name, date, type, desc, colors, template_id, diaries, step_mandalas)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
       [
         plant.name,
         plant.date,
@@ -91,7 +95,8 @@ export class SQLitePotRepository implements IPotRepository {
         plant.desc || '',
         JSON.stringify(plant.colors || []),
         plant.templateId || null,
-        JSON.stringify(plant.diaries || {})
+        JSON.stringify(plant.diaries || {}),
+        JSON.stringify(plant.stepMandalas || {})
       ]
     );
   }
