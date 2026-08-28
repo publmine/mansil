@@ -5569,6 +5569,7 @@ export default function HomeScreen() {
       <Modal
         visible={isButterflyPopupOpen}
         transparent={true}
+        statusBarTranslucent={true}
         animationType="fade"
         onRequestClose={() => setIsButterflyPopupOpen(false)}
       >
@@ -5615,6 +5616,7 @@ export default function HomeScreen() {
       <Modal
         visible={isSecondGardenPopupOpen}
         transparent={true}
+        statusBarTranslucent={true}
         animationType="fade"
         onRequestClose={() => setIsSecondGardenPopupOpen(false)}
       >
@@ -5663,6 +5665,7 @@ export default function HomeScreen() {
       <Modal
         visible={isBeePopupOpen}
         transparent={true}
+        statusBarTranslucent={true}
         animationType="fade"
         onRequestClose={() => setIsBeePopupOpen(false)}
       >
@@ -5709,6 +5712,7 @@ export default function HomeScreen() {
       <Modal
         visible={isThirdGardenPopupOpen}
         transparent={true}
+        statusBarTranslucent={true}
         animationType="fade"
         onRequestClose={() => setIsThirdGardenPopupOpen(false)}
       >
@@ -5757,6 +5761,7 @@ export default function HomeScreen() {
       <Modal
         visible={isBirdPopupOpen}
         transparent={true}
+        statusBarTranslucent={true}
         animationType="fade"
         onRequestClose={() => setIsBirdPopupOpen(false)}
       >
@@ -5804,6 +5809,7 @@ export default function HomeScreen() {
       <Modal
         visible={isSeason1CompletedModalOpen}
         transparent={true}
+        statusBarTranslucent={true}
         animationType="fade"
         onRequestClose={() => setIsSeason1CompletedModalOpen(false)}
       >
@@ -5850,6 +5856,7 @@ export default function HomeScreen() {
       <Modal
         visible={isDiaryModalOpen}
         transparent={true}
+        statusBarTranslucent={true}
         animationType="slide"
         onRequestClose={() => setIsDiaryModalOpen(false)}
       >
@@ -5909,6 +5916,7 @@ export default function HomeScreen() {
       <Modal
         visible={isArchiveDetailModalOpen}
         transparent={true}
+        statusBarTranslucent={true}
         animationType="none"
         onRequestClose={closeArchiveModal}
       >
@@ -5920,7 +5928,7 @@ export default function HomeScreen() {
           <RNAnimated.View
             style={{
               width: '100%',
-              height: windowHeight - (Math.max(insets.top, 24) + 185),
+              height: windowHeight - (Math.max(insets.top, 24) + 145),
               backgroundColor: '#070b16',
               borderTopLeftRadius: 28,
               borderTopRightRadius: 28,
@@ -6264,6 +6272,7 @@ export default function HomeScreen() {
       <Modal
         visible={isSettingsModalOpen}
         transparent={true}
+        statusBarTranslucent={true}
         animationType="fade"
         onRequestClose={() => setIsSettingsModalOpen(false)}
       >
@@ -6387,6 +6396,7 @@ export default function HomeScreen() {
       <Modal
         visible={isSeedModalOpen}
         transparent={true}
+        statusBarTranslucent={true}
         animationType="fade"
         onRequestClose={() => setIsSeedModalOpen(false)}
       >
@@ -6508,6 +6518,7 @@ export default function HomeScreen() {
       <Modal
         visible={isSeedThankModalOpen}
         transparent={true}
+        statusBarTranslucent={true}
         animationType="fade"
         onRequestClose={() => setIsSeedThankModalOpen(false)}
       >
@@ -6581,6 +6592,7 @@ export default function HomeScreen() {
       <Modal
         visible={isPremiumModalOpen}
         transparent={true}
+        statusBarTranslucent={true}
         animationType="fade"
         onRequestClose={() => setIsPremiumModalOpen(false)}
       >
@@ -6716,6 +6728,7 @@ export default function HomeScreen() {
       <Modal
         visible={showOnboardingNotice}
         transparent={true}
+        statusBarTranslucent={true}
         animationType="fade"
       >
         <View style={[styles.modalOverlay, { backgroundColor: 'rgba(0, 0, 0, 0.85)', padding: 0 }]}>
@@ -6804,6 +6817,7 @@ export default function HomeScreen() {
       <Modal
         visible={isModalOpen}
         transparent={true}
+        statusBarTranslucent={true}
         animationType="fade"
         onRequestClose={closeModal}
       >
