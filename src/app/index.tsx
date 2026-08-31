@@ -6007,13 +6007,6 @@ export default function HomeScreen() {
                       </ThemedText>
                     )}
                   </View>
-                  <Pressable
-                    onPress={closeArchiveModal}
-                    hitSlop={{ top: 16, bottom: 16, left: 16, right: 16 }}
-                    style={{ padding: 4 }}
-                  >
-                    <ThemedText style={{ color: '#9A9FB0', fontSize: 20, fontWeight: 'bold' }}>✕</ThemedText>
-                  </Pressable>
                 </View>
               );
             })()}
