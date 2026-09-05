@@ -1033,8 +1033,8 @@ export const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   cardMessage: {
-    fontSize: 12,
-    lineHeight: 21,
+    fontSize: 13,
+    lineHeight: 22,
     fontFamily: 'BookkMyungjo_Bold',
     fontWeight: '500',
     color: '#D8D1B3',
@@ -1044,7 +1044,7 @@ export const styles = StyleSheet.create({
   },
   cardMessageLv5: {
     color: '#FFEAA7',
-    lineHeight: 20,
+    lineHeight: 22,
     textShadowColor: 'rgba(0, 0, 0, 0.6)',
     textShadowOffset: { width: 0, height: 0 },
     textShadowRadius: 4,
@@ -1452,9 +1452,9 @@ export const styles = StyleSheet.create({
     alignSelf: 'center',
   },
   cardQuestionText: {
-    fontSize: 12,
+    fontSize: 13,
     color: '#FFEAA7',
-    lineHeight: 20,
+    lineHeight: 21,
     textAlign: 'center',
     fontWeight: '500',
   },
