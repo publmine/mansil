@@ -18,6 +18,7 @@ import { AsyncStoragePotRepository } from '@/repositories/asyncstorage/AsyncStor
 import { playSoundEffect, triggerHaptic } from '@/services/feedback';
 import { GameService } from '@/services/GameService';
 import { checkHasPurchased, initPurchaseService } from '@/services/purchaseService';
+import { resetReviewPromptFlag } from '@/services/reviewService';
 import React, { createContext, useContext, useEffect, useState } from 'react';
 import { Platform } from 'react-native';
 
@@ -360,6 +361,7 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
     try {
       const newState = await gameService.resetGame();
       setState(newState);
+      await resetReviewPromptFlag();
     } catch (e) {
       console.error('Failed to reset game:', e);
     }

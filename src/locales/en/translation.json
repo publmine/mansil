@@ -21,7 +21,8 @@
     "garden3": "Garden 3",
     "bloomed_count": "Bloomed: {{count}}",
     "color_count": "Colors: {{count}}",
-    "waiting_for_seed": "Seed Waiting"
+    "waiting_for_seed": "Seed Waiting",
+    "exit_confirm": "Press back again to exit"
   },
   "greenhouse": {
     "title": "Mandala Onsil",
@@ -149,7 +150,14 @@
     "app_info_title": "App Information",
     "app_info_desc": "Mandala Onsil is an offline healing app that safely keeps your data on your device without requiring an account.\n\nIf you delete the app or switch devices, your journals and flower collection may not be recoverable.\n\nPurchased content can always be restored through Google Play at no additional cost.",
     "privacy_policy": "Privacy Policy",
-    "seed_support": "Planting for Next Season"
+    "seed_support": "Planting for Next Season",
+    "rate_app": "Rate App"
+  },
+  "review": {
+    "prompt_title": "Caring for Heart",
+    "prompt_desc": "If this app helped you care for your heart,\na short review would mean the world to us.",
+    "rate_btn": "Rate App",
+    "later_btn": "Maybe Later"
   },
   "seed_modal": {
     "title": "Planting for Next Season",

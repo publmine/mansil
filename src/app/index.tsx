@@ -41,6 +41,7 @@ import { MaxContentWidth, Spacing } from '@/constants/theme';
 import { ArchivedPlant, DiaryEntry, useGame } from '@/context/GameContext';
 import { playSoundEffect, triggerHaptic } from '@/services/feedback';
 import { addCustomerInfoUpdateListener, checkHasPurchased, getProductPrices, purchasePremiumSeason, purchaseSeedDonation, restorePurchases } from '@/services/purchaseService';
+import { hasSeenReviewPrompt, openStoreReviewPage, requestAppReview, setHasSeenReviewPrompt } from '@/services/reviewService';
 import { styles } from '@/styles/index.styles';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as Sharing from 'expo-sharing';
@@ -2806,6 +2807,9 @@ export default function HomeScreen() {
   // Second garden popup (after butterfly)
   const [isSecondGardenPopupOpen, setIsSecondGardenPopupOpen] = useState(false);
 
+  // App review prompt popup (shown once upon reaching second garden)
+  const [isReviewPromptOpen, setIsReviewPromptOpen] = useState(false);
+
   // Butterfly overlay animation on greenhouse after 9th
   const [showButterflyOverlay, setShowButterflyOverlay] = useState(false);
 
@@ -2945,6 +2949,19 @@ export default function HomeScreen() {
       }
     }).catch(() => { });
   }, []);
+
+  const handleAcceptReview = async () => {
+    triggerHaptic('medium');
+    setIsReviewPromptOpen(false);
+    await setHasSeenReviewPrompt();
+    await requestAppReview();
+  };
+
+  const handleDismissReview = async () => {
+    triggerHaptic('light');
+    setIsReviewPromptOpen(false);
+    await setHasSeenReviewPrompt();
+  };
 
   const handleOpenDiaryWriteModal = (question: string) => {
     const currentLevel = activePot?.level || 1;
@@ -3357,6 +3374,20 @@ export default function HomeScreen() {
       setCurrentScreen('sanctuary');
     }
   }, [isLoaded, state.archive.length, currentScreen, isBirdPopupOpen, isSeason1CompletedModalOpen, showBirdOverlay]);
+
+  // 두 번째 꽃밭(9~17송이 구간) 진입 후 온실 화면에서 1회성 앱 평가 팝업 노출 체크
+  useEffect(() => {
+    if (isLoaded && currentScreen === 'mansil' && state.archive.length >= 9 && state.archive.length < 18) {
+      hasSeenReviewPrompt().then((seen) => {
+        if (!seen && !isButterflyPopupOpen && !isSecondGardenPopupOpen && !showButterflyOverlay && !isReviewPromptOpen) {
+          const timer = setTimeout(() => {
+            setIsReviewPromptOpen(true);
+          }, 1200);
+          return () => clearTimeout(timer);
+        }
+      });
+    }
+  }, [isLoaded, currentScreen, state.archive.length, isButterflyPopupOpen, isSecondGardenPopupOpen, showButterflyOverlay, isReviewPromptOpen]);
 
   // Check milestone popups/toasts when returning to greenhouse
   useEffect(() => {
@@ -5117,26 +5148,6 @@ export default function HomeScreen() {
                                 style={[styles.cardQuestionText, { flexShrink: 1, wordBreak: 'keep-all' }] as any}
                                 lineBreakStrategyIOS="hangul-word"
                               >
-                                {/^[^\w\s가-힣]/.test(displayQuestion) && (
-                                  <>
-                                    <Image
-                                      source={
-                                        currentLevel === 1
-                                          ? require('../../assets/images/seed.png')
-                                          : currentLevel === 2
-                                            ? require('../../assets/images/process_ing.png')
-                                            : currentLevel === 3
-                                              ? require('../../assets/images/lev.png')
-                                              : currentLevel === 4
-                                                ? require('../../assets/images/process_mid.png')
-                                                : require('../../assets/images/process_done.png')
-                                      }
-                                      style={{ width: 18, height: 18, transform: [{ translateY: 6 }] }}
-                                      resizeMode="contain"
-                                    />
-                                    {' '}
-                                  </>
-                                )}
                                 {displayQuestion.replace(/^[^\w\s가-힣]+\s*/, '')}
                               </ThemedText>
                             </View>
@@ -5647,6 +5658,12 @@ export default function HomeScreen() {
                     setIsSecondGardenPopupOpen(false);
                     await startSecondGarden();
                     lastShownArchiveLengthRef.current = state.archive.length;
+                    const seen = await hasSeenReviewPrompt();
+                    if (!seen) {
+                      setTimeout(() => {
+                        setIsReviewPromptOpen(true);
+                      }, 1200);
+                    }
                   }}
                 >
                   <ThemedText type="smallBold" style={styles.secondGardenStartBtnText}>
@@ -5654,6 +5671,60 @@ export default function HomeScreen() {
                   </ThemedText>
                 </Pressable>
               </View>
+            </View>
+          </View>
+        </View>
+      </Modal>
+
+      {/* ------------------------------------------------------------- */}
+      {/* APP REVIEW PROMPT MODAL (2nd Garden First Screen) */}
+      {/* ------------------------------------------------------------- */}
+      <Modal
+        visible={isReviewPromptOpen}
+        transparent={true}
+        statusBarTranslucent={true}
+        animationType="fade"
+        onRequestClose={handleDismissReview}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={[styles.modalCard, { maxWidth: 340, overflow: 'hidden' }]}>
+            <View style={[styles.cardBody, { paddingTop: 26, paddingBottom: 6, alignItems: 'center' }]}>
+              <Image
+                source={require('../../assets/images/process_done.png')}
+                style={{ width: 44, height: 44, marginBottom: 12 }}
+                resizeMode="contain"
+              />
+              <ThemedText type="subtitle" style={[styles.modalTitleText, { textAlign: 'center', fontSize: 18, marginBottom: 10 }]}>
+                {t('review.prompt_title')}
+              </ThemedText>
+              <ThemedText
+                type="default"
+                style={[
+                  styles.modalMessageText,
+                  { textAlign: 'center', lineHeight: 22, color: '#e6ebed' }
+                ]}
+              >
+                {t('review.prompt_desc')}
+              </ThemedText>
+            </View>
+
+            <View style={[styles.modalActions, { marginTop: 18, paddingBottom: 22, flexDirection: 'row', gap: 10, width: '100%' }]}>
+              <Pressable
+                style={[styles.modalCancelBtn, { flex: 1, height: 48, paddingVertical: 0 }]}
+                onPress={handleDismissReview}
+              >
+                <ThemedText type="smallBold" style={styles.modalCancelText}>
+                  {t('review.later_btn')}
+                </ThemedText>
+              </Pressable>
+              <Pressable
+                style={[styles.modalConfirmBtn, { flex: 1.3, height: 48, paddingVertical: 0, backgroundColor: '#ddefb7' }]}
+                onPress={handleAcceptReview}
+              >
+                <ThemedText type="smallBold" style={[styles.modalConfirmText, { color: '#161a29' }]}>
+                  {t('review.rate_btn')}
+                </ThemedText>
+              </Pressable>
             </View>
           </View>
         </View>
@@ -6270,7 +6341,7 @@ export default function HomeScreen() {
         onRequestClose={() => setIsSettingsModalOpen(false)}
       >
         <View style={styles.modalOverlay}>
-          <View style={[styles.modalCard, { maxWidth: 340, padding: Spacing.four, gap: Spacing.three }]}>
+          <View style={[styles.modalCard, { maxWidth: 340, maxHeight: '92%', paddingTop: Spacing.four, paddingBottom: Spacing.four, paddingHorizontal: 20, gap: Spacing.three }]}>
             <View style={{ alignItems: 'center', borderBottomWidth: 1, borderColor: '#161a29', paddingBottom: Spacing.three }}>
               <ThemedText type="smallBold" style={{ color: '#ddefb7', fontSize: 17, letterSpacing: 1.5 }}>
                 {t('settings.title')}
@@ -6369,6 +6440,27 @@ export default function HomeScreen() {
                 </View>
                 <Svg width={16} height={16} viewBox="0 0 24 24" fill="none" stroke="#9A9FB0" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
                   <Path d="M9 18l6-6-6-6" />
+                </Svg>
+              </Pressable>
+
+              {/* 앱 평가하기 */}
+              <Pressable
+                style={styles.settingsMenuItem}
+                onPress={async () => {
+                  setIsSettingsModalOpen(false);
+                  await openStoreReviewPage();
+                }}
+              >
+                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
+                  <Svg width={20} height={20} viewBox="0 0 24 24" fill="none" stroke="#FFEAA7" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
+                    <Polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" fill="rgba(255,234,167,0.25)" />
+                  </Svg>
+                  <ThemedText style={styles.settingsMenuText}>{t('settings.rate_app')}</ThemedText>
+                </View>
+                <Svg width={16} height={16} viewBox="0 0 24 24" fill="none" stroke="#9A9FB0" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
+                  <Path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6" />
+                  <Path d="M15 3h6v6" />
+                  <Path d="M10 14L21 3" />
                 </Svg>
               </Pressable>
             </View>
