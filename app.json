@@ -16,7 +16,7 @@
       "requireFullScreen": true
     },
     "android": {
-      "versionCode": 27,
+      "versionCode": 28,
       "adaptiveIcon": {
         "backgroundColor": "#0F1D10",
         "foregroundImage": "./assets/images/icon.png"
@@ -56,7 +56,16 @@
       ],
       "expo-sharing",
       "expo-sqlite",
-      "expo-localization"
+      "expo-localization",
+      [
+        "expo-build-properties",
+        {
+          "android": {
+            "enableProguardInReleaseBuilds": true,
+            "enableShrinkResourcesInReleaseBuilds": true
+          }
+        }
+      ]
     ],
     "experiments": {
       "typedRoutes": true,
