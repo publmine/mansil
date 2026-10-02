@@ -2,6 +2,7 @@ import React, { useEffect, useRef, useState } from 'react';
 import {
   Dimensions,
   Image,
+  KeyboardAvoidingView,
   Linking,
   Modal,
   Platform,
@@ -5931,9 +5932,17 @@ export default function HomeScreen() {
         animationType="slide"
         onRequestClose={() => setIsDiaryModalOpen(false)}
       >
-        <View style={styles.modalOverlay}>
+        <KeyboardAvoidingView
+          behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+          style={styles.modalOverlay}
+        >
           <View style={[styles.modalCard, { maxHeight: '90%', justifyContent: 'flex-start', padding: Spacing.three, gap: Spacing.three }]}>
-            <View style={{ gap: Spacing.two }}>
+            <ScrollView
+              contentContainerStyle={{ gap: Spacing.two }}
+              keyboardShouldPersistTaps="handled"
+              showsVerticalScrollIndicator={false}
+              bounces={false}
+            >
               <ThemedText type="smallBold" style={{ color: '#ddefb7', fontSize: 15, letterSpacing: 1.5, textAlign: 'center', textTransform: 'uppercase' }}>
                 {t('diary.modal_title')}
               </ThemedText>
@@ -5963,7 +5972,7 @@ export default function HomeScreen() {
                   style={[styles.textAreaInput, { minHeight: 120 }]}
                 />
               </View>
-            </View>
+            </ScrollView>
 
             <View style={{ flexDirection: 'row', gap: 10, marginTop: 4 }}>
               <Pressable
@@ -5980,7 +5989,7 @@ export default function HomeScreen() {
               </Pressable>
             </View>
           </View>
-        </View>
+        </KeyboardAvoidingView>
       </Modal>
 
       {/* ARCHIVE STEP & FLOWER DETAIL MODAL (BOTTOM SHEET) */}
